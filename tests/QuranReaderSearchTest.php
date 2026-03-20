@@ -176,12 +176,12 @@ afterEach(function (): void {
 
 function quranReaderSearchAyahIndexes(string $query, int $limit = 7000): array
 {
-    $component = new QuranReader();
+    $component = new QuranReader;
 
-    $normalizeMethod = new \ReflectionMethod($component, 'normalizeQuranSearchQuery');
+    $normalizeMethod = new ReflectionMethod($component, 'normalizeQuranSearchQuery');
     $normalizeMethod->setAccessible(true);
 
-    $buildMatchesMethod = new \ReflectionMethod($component, 'buildSearchMatches');
+    $buildMatchesMethod = new ReflectionMethod($component, 'buildSearchMatches');
     $buildMatchesMethod->setAccessible(true);
 
     $normalizedQuery = trim((string) $normalizeMethod->invoke($component, $query));
