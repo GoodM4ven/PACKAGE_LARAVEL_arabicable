@@ -440,6 +440,11 @@ Key utilities:
 - Tokenization: `simpleWordTokenize`
 
 
+## Contribution
+
+- Always target `dev` branch for your PRs.
+
+
 ## License
 
 This package is open-sourced software licensed under the [MIT license](LICENSE.md).
