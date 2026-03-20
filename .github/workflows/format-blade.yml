@@ -30,7 +30,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Check Blade formatting
         run: npx blade-formatter --check-formatted --config .bladeformatterrc "resources/views/**/*.blade.php" "workbench/resources/views/**/*.blade.php"
