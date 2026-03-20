@@ -26,7 +26,13 @@ For each Arabicable text column, the package maintains:
 
 And all in all, this package provides all of these features:
 
+</div>
+<div align="center">
+
 ### Anaylsis and Search 
+
+</div>
+<div align="left">
 
 - Generate Arabic-ready database columns and keep searchable variants in sync automatically with [Arabicable model and migration setup](#arabicable-model--migration).
 - Run exact, like, and relevance-ranked Arabic matching with [search scopes](#search-scopes) and [text processing helpers](#text-processing-helpers).
@@ -36,20 +42,44 @@ And all in all, this package provides all of these features:
 - Compile and seed local lexical dictionaries for variants and stop-words using the [dictionary workflow](#dictionary-workflow-arabicableraw_data_path).
 - Use pure-PHP transliteration, mapping, normalization, dediacritization, and tokenization through the [CamelTools facade](#cameltools-facade-pure-php-utility-port).
 
+</div>
+<div align="center">
+
 ### Al-Qur'an
+
+</div>
+<div align="left">
 
 - Query Quran data at both ayah and exact word-occurrence levels with [Quran indexing tables](#quran-indexing-tables).
 - Render Quran text with DigitalKhatt-compatible fonts while searching normalized fields via [DigitalKhatt / Quran font setup](#digitalkhatt--quran-font-setup).
 
+</div>
+<div align="center">
+
 ### Date
+
+</div>
+<div align="left">
 
 - Convert dates between Gregorian and Hijri calendars with [Gregorian/Hijri date helpers](#gregorianhijri-date-helpers) and [Arabic facade common methods](#arabic-facade-common-methods).
 
+</div>
+<div align="center">
+
 ### Numbers
+
+</div>
+<div align="left">
 
 - Convert numerals between ASCII digits (`123`) and Arabic-Indic digits (`١٢٣`) from backend and browser using [Arabic facade common methods](#arabic-facade-common-methods) and the [JavaScript number helper](#javascript-number-helper).
 
+</div>
+<div align="center">
+
 ### Voice
+
+</div>
+<div align="left">
 
 - Add browser speech-to-text, text-to-speech, and voice transforms with the [RunAnywhere STT/TTS companion](#runanywhere-stttts-companion).
 
