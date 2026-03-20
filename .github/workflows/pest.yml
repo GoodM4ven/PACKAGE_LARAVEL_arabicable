@@ -52,8 +52,8 @@ jobs:
 
       - name: Prepare application
         run: |
-          cp .env.example .env
-          php artisan key:generate --force --no-interaction
+          cp workbench/.env.example workbench/.env
+          php workbench/artisan key:generate --force --no-interaction
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
