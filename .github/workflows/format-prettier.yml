@@ -34,7 +34,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Check Prettier formatting
         run: npx prettier --check --config .prettierrc "resources/{css,js}/**/*.{css,js}" "workbench/resources/**/*.{css,js}"

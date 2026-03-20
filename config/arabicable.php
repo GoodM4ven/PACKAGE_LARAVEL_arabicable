@@ -36,7 +36,7 @@ return [
     'raw_data_path' => $rawDataPath,
 
     'features' => [
-        'quran' => true,
+        'quran' => false,
     ],
 
     'special_characters' => [
