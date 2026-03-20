@@ -97,10 +97,7 @@
         ],
         "serve": [
             "Composer\\Config::disableProcessTimeout",
-            "@prepareback",
-            "@preparefront",
-            "@publishfront",
-            "@php vendor/bin/testbench serve --ansi"
+            "bash .scripts/serve-workbench.sh"
         ],
         "test": "bash .scripts/run-pest.sh",
         "testel": "bash .scripts/run-pest.sh --parallel",
