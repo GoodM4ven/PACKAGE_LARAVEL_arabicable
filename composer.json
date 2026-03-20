@@ -101,7 +101,7 @@
         ],
         "test": "bash .scripts/run-pest.sh",
         "testel": "bash .scripts/run-pest.sh --parallel",
-        "testcov": "bash .scripts/run-pest.sh --coverage",
+        "testcov": "bash .scripts/run-pest.sh --coverage-text",
         "green": [
             "Composer\\Config::disableProcessTimeout",
             "bash .scripts/run-green.sh"
