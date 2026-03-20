@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use GoodMaven\Arabicable\Facades\Arabic;
 use GoodMaven\Arabicable\Facades\ArabicFilter;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -25,17 +24,9 @@ return new class extends Migration
             $table->unsignedSmallInteger('mushaf_page')->nullable();
             $table->unsignedTinyInteger('mushaf_line')->nullable();
             $table->text('text_uthmani');
-            $table->text('text_sanitized');
             $table->text('text_searchable');
             $table->text('text_searchable_typed');
-            $table->text('text_without_harakat');
-            $table->text('text_without_diacritics');
-            $table->text('text_normalized_huroof');
             $table->timestamps();
-
-            $table->unique(['surah_number', 'ayah_number']);
-            $table->unique('ayah_index');
-            $table->index('mushaf_page');
         });
 
         Schema::create('quran_words', function (Blueprint $table): void {
@@ -47,25 +38,11 @@ return new class extends Migration
             $table->unsignedSmallInteger('word_position');
             $table->unsignedInteger('global_word_index');
             $table->string('token_uthmani', 191);
-            $table->string('token_sanitized', 191);
             $table->string('token_searchable', 191);
             $table->string('token_searchable_typed', 191);
-            $table->string('token_without_harakat', 191);
-            $table->string('token_without_diacritics', 191);
-            $table->string('token_normalized_huroof', 191);
             $table->string('token_stem', 191)->nullable();
             $table->string('token_root', 191)->nullable();
             $table->string('token_lemma', 191)->nullable();
-
-            $table->unique(['surah_number', 'ayah_number', 'word_position']);
-            $table->unique('global_word_index');
-            $table->index('token_searchable');
-            $table->index('token_searchable_typed');
-            $table->index('token_without_diacritics');
-            $table->index('token_normalized_huroof');
-            $table->index('token_stem');
-            $table->index('token_root');
-            $table->index('token_lemma');
         });
 
         Schema::create('quran_mushaf_lines', function (Blueprint $table): void {
@@ -79,14 +56,11 @@ return new class extends Migration
             $table->unsignedInteger('last_word_index')->nullable();
             $table->unsignedTinyInteger('surah_number')->nullable();
             $table->timestamps();
-
-            $table->unique(['layout_key', 'page_number', 'line_number']);
-            $table->index(['layout_key', 'page_number']);
-            $table->index(['first_word_index', 'last_word_index']);
         });
 
         $this->importQuranIndexData();
         $this->importMushafLayoutData();
+        $this->createQuranReaderIndexes();
     }
 
     public function down(): void
@@ -94,6 +68,30 @@ return new class extends Migration
         Schema::dropIfExists('quran_mushaf_lines');
         Schema::dropIfExists('quran_words');
         Schema::dropIfExists('quran_verses');
+    }
+
+    private function createQuranReaderIndexes(): void
+    {
+        Schema::table('quran_verses', function (Blueprint $table): void {
+            $table->unique(['surah_number', 'ayah_number']);
+            $table->unique('ayah_index');
+        });
+
+        Schema::table('quran_words', function (Blueprint $table): void {
+            $table->unique(['surah_number', 'ayah_number', 'word_position']);
+            $table->unique('global_word_index');
+            $table->index('token_searchable');
+            $table->index('token_searchable_typed');
+            $table->index('token_stem');
+            $table->index('token_root');
+            $table->index('token_lemma');
+        });
+
+        Schema::table('quran_mushaf_lines', function (Blueprint $table): void {
+            $table->unique(['layout_key', 'page_number', 'line_number']);
+            $table->index(['page_number', 'line_number']);
+            $table->index(['first_word_index', 'last_word_index']);
+        });
     }
 
     private function importQuranIndexData(): void
@@ -122,12 +120,8 @@ return new class extends Migration
                 'mushaf_page' => null,
                 'mushaf_line' => null,
                 'text_uthmani' => $verse['text_uthmani'],
-                'text_sanitized' => $verse['text_sanitized'],
                 'text_searchable' => $verse['text_searchable'],
                 'text_searchable_typed' => $verse['text_searchable_typed'],
-                'text_without_harakat' => $verse['text_without_harakat'],
-                'text_without_diacritics' => $verse['text_without_diacritics'],
-                'text_normalized_huroof' => $verse['text_normalized_huroof'],
                 'created_at' => $timestamp,
                 'updated_at' => $timestamp,
             ];
@@ -161,15 +155,8 @@ return new class extends Migration
             }
 
             $tokens = $this->tokenizeAyah($verse['text_uthmani']);
-            $sanitizedTokens = array_map(
-                static fn (string $token): string => Arabic::stripWeirdCharacters($token, keepHarakat: true, keepPunctuation: false),
-                $tokens,
-            );
             $searchableTokens = array_map(static fn (string $token): string => ArabicFilter::forSearch($token), $tokens);
             $typedSearchableTokens = array_map(fn (string $token): string => $this->normalizeQuranForTypedSearch($token), $tokens);
-            $withoutHarakatTokens = array_map(static fn (string $token): string => ArabicFilter::withoutHarakat($token), $tokens);
-            $withoutDiacriticsTokens = array_map(static fn (string $token): string => ArabicFilter::withoutDiacritics($token), $tokens);
-            $normalizedHuroofTokens = array_map(static fn (string $token): string => Arabic::normalizeHuroof($token), $tokens);
 
             $wordPosition = 0;
 
@@ -195,12 +182,8 @@ return new class extends Migration
                     'word_position' => $wordPosition,
                     'global_word_index' => $globalWordIndex,
                     'token_uthmani' => $token,
-                    'token_sanitized' => $sanitizedTokens[$index] ?? $token,
                     'token_searchable' => $searchableToken !== '' ? $searchableToken : $typedSearchableToken,
                     'token_searchable_typed' => $typedSearchableToken !== '' ? $typedSearchableToken : $searchableToken,
-                    'token_without_harakat' => $withoutHarakatTokens[$index] ?? $searchableToken,
-                    'token_without_diacritics' => $withoutDiacriticsTokens[$index] ?? $searchableToken,
-                    'token_normalized_huroof' => $normalizedHuroofTokens[$index] ?? $searchableToken,
                     'token_stem' => $lexical['stem'] ?? null,
                     'token_root' => $lexical['root'] ?? null,
                     'token_lemma' => $lexical['lemma'] ?? null,
@@ -266,22 +249,14 @@ return new class extends Migration
             ];
 
             if (count($rows) >= 500) {
-                DB::table('quran_mushaf_lines')->upsert(
-                    $rows,
-                    ['layout_key', 'page_number', 'line_number'],
-                    ['line_type', 'is_centered', 'first_word_index', 'last_word_index', 'surah_number', 'updated_at'],
-                );
+                DB::table('quran_mushaf_lines')->insert($rows);
 
                 $rows = [];
             }
         }
 
         if ($rows !== []) {
-            DB::table('quran_mushaf_lines')->upsert(
-                $rows,
-                ['layout_key', 'page_number', 'line_number'],
-                ['line_type', 'is_centered', 'first_word_index', 'last_word_index', 'surah_number', 'updated_at'],
-            );
+            DB::table('quran_mushaf_lines')->insert($rows);
         }
 
         $database->close();
@@ -344,7 +319,7 @@ return new class extends Migration
     }
 
     /**
-     * @return array<int, array{surah_number: int, ayah_number: int, ayah_index: int, text_uthmani: string, text_sanitized: string, text_searchable: string, text_searchable_typed: string, text_without_harakat: string, text_without_diacritics: string, text_normalized_huroof: string}>
+     * @return array<int, array{surah_number: int, ayah_number: int, ayah_index: int, text_uthmani: string, text_searchable: string, text_searchable_typed: string}>
      */
     private function collectVerses(string $quranDirectory): array
     {
@@ -381,12 +356,8 @@ return new class extends Migration
                     'ayah_number' => $parsed['ayah_number'],
                     'ayah_index' => $ayahIndex,
                     'text_uthmani' => $ayahText,
-                    'text_sanitized' => Arabic::stripWeirdCharacters($ayahText, keepHarakat: true, keepPunctuation: true),
                     'text_searchable' => ArabicFilter::forSearch($ayahText),
                     'text_searchable_typed' => $this->normalizeQuranForTypedSearch($ayahText),
-                    'text_without_harakat' => ArabicFilter::withoutHarakat($ayahText),
-                    'text_without_diacritics' => ArabicFilter::withoutDiacritics($ayahText),
-                    'text_normalized_huroof' => Arabic::normalizeHuroof($ayahText),
                 ];
             }
         }
@@ -481,7 +452,7 @@ return new class extends Migration
             if ($candidate !== '' && is_dir($candidate)) {
                 $resolved = realpath($candidate);
 
-                if (is_string($resolved) && $resolved !== '') {
+                if ($resolved !== false) {
                     return $resolved;
                 }
 
@@ -683,7 +654,7 @@ return new class extends Migration
             }
 
             if ($resolved['lemma'] === null) {
-                foreach (['word-lemma copy.db', 'word-lemma.db'] as $fileName) {
+                foreach (['word-lemma.db'] as $fileName) {
                     $path = $directory.'/'.$fileName;
 
                     if (is_file($path)) {

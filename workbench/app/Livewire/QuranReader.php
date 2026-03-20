@@ -6,6 +6,7 @@ namespace Workbench\App\Livewire;
 
 use GoodMaven\Arabicable\Facades\ArabicFilter;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
@@ -375,13 +376,10 @@ class QuranReader extends Component
         $queryVariants = $this->expandSearchTextVariants($searchQuery);
         $builder = DB::table('quran_verses');
 
-        $builder->where(function ($whereBuilder) use ($queryVariants): void {
+        $builder->where(function (Builder $whereBuilder) use ($queryVariants): void {
             foreach ($queryVariants as $variant) {
-                $likeQuery = '%'.$variant.'%';
-
-                $whereBuilder
-                    ->orWhere('text_searchable_typed', 'like', $likeQuery)
-                    ->orWhere('text_searchable', 'like', $likeQuery);
+                $this->addBoundedPhraseConditions($whereBuilder, 'text_searchable_typed', $variant);
+                $this->addBoundedPhraseConditions($whereBuilder, 'text_searchable', $variant);
             }
         });
 
@@ -401,13 +399,10 @@ class QuranReader extends Component
         $queryVariants = $this->expandSearchTextVariants($searchQuery);
         $builder = DB::table('quran_words');
 
-        $builder->where(function ($whereBuilder) use ($queryVariants): void {
+        $builder->where(function (Builder $whereBuilder) use ($queryVariants): void {
             foreach ($queryVariants as $variant) {
-                $likeQuery = '%'.$variant.'%';
-
-                $whereBuilder
-                    ->orWhere('token_searchable_typed', 'like', $likeQuery)
-                    ->orWhere('token_searchable', 'like', $likeQuery);
+                $this->addTokenPrefixConditions($whereBuilder, 'token_searchable_typed', $variant);
+                $this->addTokenPrefixConditions($whereBuilder, 'token_searchable', $variant);
             }
         });
 
@@ -1431,13 +1426,17 @@ class QuranReader extends Component
             return [];
         }
 
+        $withoutConjunctions = $this->stripLeadingConjunctionsFromPhrase($trimmed);
+
         $variants = [
             $trimmed,
             strtr($trimmed, ['ي' => 'ی', 'ى' => 'ی', 'ك' => 'ک']),
             strtr($trimmed, ['ی' => 'ي', 'ى' => 'ي', 'ک' => 'ك']),
             strtr($trimmed, ['الرحمن' => 'الرحمان', 'رحمن' => 'رحمان']),
             strtr($trimmed, ['الرحمان' => 'الرحمن', 'رحمان' => 'رحمن']),
-            $this->stripLeadingConjunctionsFromPhrase($trimmed),
+            $withoutConjunctions,
+            $this->normalizeQuestionVerbSpellingsInPhrase($trimmed),
+            $this->normalizeQuestionVerbSpellingsInPhrase($withoutConjunctions),
         ];
 
         $normalized = [];
@@ -1453,6 +1452,66 @@ class QuranReader extends Component
         }
 
         return array_keys($normalized);
+    }
+
+    private function normalizeQuestionVerbSpellingsInPhrase(string $text): string
+    {
+        $tokens = preg_split('/\s+/u', trim($text)) ?: [];
+
+        if ($tokens === []) {
+            return '';
+        }
+
+        $normalized = [];
+
+        foreach ($tokens as $token) {
+            $normalized[] = $this->normalizeQuestionVerbToken($token);
+        }
+
+        return trim(implode(' ', $normalized));
+    }
+
+    private function normalizeQuestionVerbToken(string $token): string
+    {
+        $trimmed = trim($token);
+
+        if ($trimmed === '') {
+            return '';
+        }
+
+        $patterns = [
+            '/^فاسال/u' => 'فسل',
+            '/^فسال/u' => 'فسل',
+            '/^واسال/u' => 'وسل',
+            '/^وسال/u' => 'وسل',
+            '/^اسال/u' => 'سل',
+        ];
+
+        foreach ($patterns as $pattern => $replacement) {
+            if (preg_match($pattern, $trimmed) !== 1) {
+                continue;
+            }
+
+            return preg_replace($pattern, $replacement, $trimmed) ?? $trimmed;
+        }
+
+        return $trimmed;
+    }
+
+    private function addBoundedPhraseConditions(Builder $builder, string $column, string $variant): void
+    {
+        $builder
+            ->orWhere($column, $variant)
+            ->orWhere($column, 'like', $variant.' %')
+            ->orWhere($column, 'like', '% '.$variant)
+            ->orWhere($column, 'like', '% '.$variant.' %');
+    }
+
+    private function addTokenPrefixConditions(Builder $builder, string $column, string $variant): void
+    {
+        $builder
+            ->orWhere($column, $variant)
+            ->orWhere($column, 'like', $variant.'%');
     }
 
     /**

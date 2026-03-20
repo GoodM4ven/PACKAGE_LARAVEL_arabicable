@@ -97,20 +97,14 @@
         ],
         "serve": [
             "Composer\\Config::disableProcessTimeout",
-            "@prepareback",
-            "@preparefront",
-            "@publishfront",
-            "@php vendor/bin/testbench serve --ansi"
+            "bash .scripts/serve-workbench.sh"
         ],
         "test": "bash .scripts/run-pest.sh",
         "testel": "bash .scripts/run-pest.sh --parallel",
-        "testcov": "bash .scripts/run-pest.sh --coverage",
+        "testcov": "bash .scripts/run-pest.sh --coverage-text",
         "green": [
-            "@prepareback",
-            "@preparefront",
-            "@publishfront",
-            "@lint",
-            "@test"
+            "Composer\\Config::disableProcessTimeout",
+            "bash .scripts/run-green.sh"
         ]
     },
     "config": {

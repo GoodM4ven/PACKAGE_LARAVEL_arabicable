@@ -35,6 +35,10 @@ return [
 
     'raw_data_path' => $rawDataPath,
 
+    'features' => [
+        'quran' => filter_var((string) env('ARABICABLE_FEATURE_QURAN', false), FILTER_VALIDATE_BOOLEAN),
+    ],
+
     'special_characters' => [
         'harakat' => ['ِ', 'ُ', 'ٓ', 'ٰ', 'ْ', 'ٌ', 'ٍ', 'ً', 'ّ', 'َ', 'ـ', 'ٗ'],
 

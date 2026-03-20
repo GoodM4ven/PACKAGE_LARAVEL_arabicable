@@ -70,7 +70,13 @@ php artisan arabicable:install --seed
 
 This publishes config + migrations, runs migration (with prompt unless `--testing`), and imports dictionaries when `--seed` is provided.
 
-Raw data resolution defaults are package-friendly:
+3. Publish the assets:
+
+```bash
+php artisan vendor:publish --tag=arabicable-assets
+```
+
+Raw data resolution defaults are customizable if you wish:
 
 - `arabicable.raw_data_path` is auto-resolved from `vendor/goodm4ven/arabicable/resources/raw-data`, then `resources/raw-data`.
 - You can publish package raw datasets to your app with:
@@ -432,6 +438,11 @@ Key utilities:
 - Unicode/orthographic normalization: `normalizeUnicode`, `normalizeAlef*`, `normalizeAlefMaksura*`, `normalizeTehMarbuta*`, `normalizeOrthography`
 - Dediacritization: `dediac*`
 - Tokenization: `simpleWordTokenize`
+
+
+## Contribution
+
+- Always target `dev` branch for your PRs.
 
 
 ## License
