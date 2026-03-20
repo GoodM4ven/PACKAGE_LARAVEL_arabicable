@@ -1,0 +1,10 @@
+dataset	source	imported
+stop_words_classified	stop-words/compiled-stop-words-forms.tsv	25188
+stop_words_forms	stop-words/stop-words-all-forms-01.tsv	24841
+stop_words_forms	stop-words/stop-words-extra-02.json	10389
+stop_words_forms	stop-words/stop-words-list-01.txt	799
+stop_words_forms	stop-words/stop-words-main-01.json	487
+stop_words_forms	stop-words/stop-words-plain-01.txt	487
+vocalizations	vocalizations/source-unvocalized-words-02.txt	29037
+vocalizations	vocalizations/source-vocalizations-map-01.json	14870
+vocalizations	vocalizations/source-vocalized-words-01.txt	29037

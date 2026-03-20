@@ -7,7 +7,11 @@ parameters:
         - config
         - database
         - src
-        - workbench
+        - workbench/app
+        - workbench/bootstrap
+        - workbench/config
+        - workbench/database
+        - workbench/routes
     excludePaths:
         analyse:
             - workbench/bootstrap/cache

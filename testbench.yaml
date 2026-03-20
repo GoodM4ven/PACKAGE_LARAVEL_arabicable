@@ -10,7 +10,7 @@ workbench:
   build:
     - asset-publish # vendor:publish --tag=laravel-assets --force
     - create-sqlite-db
-    - migrate:refresh:
+    - migrate:
         --force: true
     - storage:link:
         --force: true

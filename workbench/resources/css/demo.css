@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap');
 @import 'tailwindcss' source(none);
 
 @source "../views/**/*.blade.php";
@@ -9,8 +9,71 @@
     display: none !important;
 }
 
+@font-face {
+    font-family: 'MadinaQuran';
+    src: url('/vendor/arabicable/madina.woff2') format('woff2');
+    font-display: swap;
+}
+
 @theme {
-    --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'IBM Plex Sans Arabic', 'Manrope', ui-sans-serif, system-ui, sans-serif;
 }
 
 @variant dark (&:where(.dark, .dark *));
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 212, 191, 0.45) rgba(15, 23, 42, 0.45);
+}
+
+*::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.35);
+}
+
+*::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: linear-gradient(180deg, rgba(45, 212, 191, 0.6), rgba(14, 165, 233, 0.55));
+}
+
+.font-quran {
+    font-family: 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;
+}
+
+.quran-segment.quran-segment-hover {
+    background: color-mix(in srgb, rgb(34 211 238 / 1) 20%, transparent);
+    color: rgb(224 242 254 / 1);
+}
+
+.quran-ayah-line-run {
+    display: flex;
+    width: 100%;
+    direction: rtl;
+    align-items: baseline;
+    gap: 0;
+    white-space: nowrap;
+}
+
+.quran-ayah-line-run-rect {
+    justify-content: flex-start;
+}
+
+.quran-ayah-line-run-centered {
+    justify-content: center;
+}
+
+.quran-word-button {
+    display: inline-flex;
+    align-items: baseline;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.quran-ayah-marker {
+    font-family: 'IBM Plex Sans Arabic', 'Manrope', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1;
+}

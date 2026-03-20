@@ -1,9 +1,9 @@
 @pushOnce('injections')
     <link
-        href="{{ asset('vendor/:package_slug/:package_slug.css') }}"
+        href="{{ asset('vendor/arabicable/arabicable.css') }}"
         rel="stylesheet"
     >
-    <script src="{{ asset('vendor/:package_slug/:package_slug.js') }}"></script>
+    <script src="{{ asset('vendor/arabicable/arabicable.js') }}"></script>
 @endPushOnce
 
 <div class="bg-linear-to-br mx-auto my-10 grid select-none place-items-center overflow-hidden">

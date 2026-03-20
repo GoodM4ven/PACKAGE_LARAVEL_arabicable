@@ -1,0 +1,6 @@
+# comment line
+word	vocalized	type_word	class_word	has_conjuction	has_definition	has_preposition	has_pronoun	has_interrog	has_conjugation	has_qasam	is_defined	is_inflected	tanwin	action	object_type	need
+من	مِنْ	حرف	حرف جر	1	0	1	0	0	0	0	0	0	0			
+قال	قَالَ	فعل	فعل ماض	0	0	0	0	0	0	0	0	0	0			
+اسم	اِسْم	اسم	اسم نكرة	0	0	0	0	0	0	0	0	0	0			
+الله	اللَّه	اسم	اسم علم	0	0	0	0	0	0	0	0	0	0			

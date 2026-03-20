@@ -27,6 +27,9 @@ if ($variables === []) {
 }
 
 writeEnvFiles($variables, $workbenchPath);
+ensureRootMcpConfiguration($rootPath);
+syncWorkbenchLinks($workbenchPath);
+ensureWorkbenchGitignoreEntries($workbenchPath);
 
 fwrite(STDOUT, sprintf(
     // "Synced %d environment variables to %s/.env and %s/.env.example\n",
@@ -112,6 +115,129 @@ function writeEnvFiles(array $variables, string $workbenchPath): void
 
         file_put_contents($target, implode(PHP_EOL, $lines).PHP_EOL);
     }
+}
+
+function syncWorkbenchLinks(string $workbenchPath): void
+{
+    $links = [
+        '.ai' => '../.ai',
+        '.agents' => '../.agents',
+        '.claude' => '../.claude',
+        'AGENTS.md' => '../AGENTS.md',
+        'CLAUDE.md' => '../CLAUDE.md',
+        '.mcp.json' => '../.mcp.json',
+        'boost.json' => '../boost.json',
+    ];
+
+    foreach ($links as $linkName => $target) {
+        $linkPath = $workbenchPath.'/'.$linkName;
+        ensureSymlink($target, $linkPath);
+    }
+}
+
+function ensureWorkbenchGitignoreEntries(string $workbenchPath): void
+{
+    $gitignorePath = $workbenchPath.'/.gitignore';
+    $requiredEntries = [
+        '/.agents',
+        '/.ai',
+        '/.claude',
+        '.mcp.json',
+        'AGENTS.md',
+        'CLAUDE.md',
+        'boost.json',
+    ];
+
+    $existingLines = file_exists($gitignorePath)
+        ? (file($gitignorePath, FILE_IGNORE_NEW_LINES) ?: [])
+        : [];
+
+    foreach ($requiredEntries as $entry) {
+        if (! in_array($entry, $existingLines, true)) {
+            $existingLines[] = $entry;
+        }
+    }
+
+    file_put_contents($gitignorePath, implode(PHP_EOL, $existingLines).PHP_EOL);
+}
+
+function ensureRootMcpConfiguration(string $rootPath): void
+{
+    $mcpPath = $rootPath.'/.mcp.json';
+    $configuration = [];
+
+    if (file_exists($mcpPath)) {
+        $decoded = json_decode((string) file_get_contents($mcpPath), true);
+
+        if (is_array($decoded)) {
+            $configuration = $decoded;
+        }
+    }
+
+    if (! isset($configuration['mcpServers']) || ! is_array($configuration['mcpServers'])) {
+        $configuration['mcpServers'] = [];
+    }
+
+    $serverConfig = $configuration['mcpServers']['laravel-boost'] ?? [];
+
+    if (! is_array($serverConfig)) {
+        $serverConfig = [];
+    }
+
+    $serverConfig['command'] = './laravel-boost-mcp.sh';
+    unset($serverConfig['args']);
+
+    $configuration['mcpServers']['laravel-boost'] = $serverConfig;
+
+    file_put_contents(
+        $mcpPath,
+        json_encode($configuration, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL
+    );
+}
+
+function ensureSymlink(string $target, string $linkPath): void
+{
+    if (is_link($linkPath) && readlink($linkPath) === $target) {
+        return;
+    }
+
+    removePath($linkPath);
+
+    $created = @symlink($target, $linkPath);
+
+    if (! $created) {
+        fwrite(STDERR, "Warning: failed to create symlink {$linkPath} -> {$target}\n");
+    }
+}
+
+function removePath(string $path): void
+{
+    if (is_link($path) || is_file($path)) {
+        @unlink($path);
+
+        return;
+    }
+
+    if (! is_dir($path)) {
+        return;
+    }
+
+    $items = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+
+    foreach ($items as $item) {
+        if ($item->isDir()) {
+            @rmdir($item->getPathname());
+
+            continue;
+        }
+
+        @unlink($item->getPathname());
+    }
+
+    @rmdir($path);
 }
 
 function trimQuotes(string $value): string

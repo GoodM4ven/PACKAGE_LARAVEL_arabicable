@@ -2,14 +2,14 @@
 
 <div class="relative">
     <!-- Left Half -->
-    <div class="absolute left-0 flex flex-col justify-center h-full w-1/2">
+    <div class="absolute left-0 flex h-full w-1/2 flex-col justify-center">
         <!-- Dashed Faded Line -->
-        <div class="absolute w-full -z-10 border-2 border-gray-400 border-dashed"></div>
-        <div class="absolute w-full z-10 h-5 bg-linear-to-r from-transparent via-white to-white"></div>
+        <div class="absolute -z-10 w-full border-2 border-dashed border-gray-400"></div>
+        <div class="bg-linear-to-r absolute z-10 h-5 w-full from-transparent via-white to-white"></div>
 
         <!-- Tag -->
-        <div class="ms-10 relative z-20">
-            <p class="text-xl px-3 py-2 bg-white italic border inline-flex w-fit">{{ $caption }}</p>
+        <div class="relative z-20 ms-10">
+            <p class="inline-flex w-fit border bg-white px-3 py-2 text-xl italic">{{ $caption }}</p>
         </div>
     </div>
 
