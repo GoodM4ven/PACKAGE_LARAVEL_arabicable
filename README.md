@@ -7,6 +7,8 @@ Practical Arabic text processing for Laravel, focused on fast and predictable Ar
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/goodm4ven/arabicable.svg?style=for-the-badge&color=gray)](https://packagist.org/packages/goodm4ven/arabicable)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/goodm4ven/PACKAGE_LARAVEL_arabicable/pest.yml?branch=main&label=tests&style=for-the-badge&color=forestgreen)](https://github.com/goodm4ven/PACKAGE_LARAVEL_arabicable/actions?query=workflow%3Apest+branch%3Amain)
+[![Coverage Status](https://img.shields.io/codecov/c/github/goodm4ven/PACKAGE_LARAVEL_arabicable/main?style=for-the-badge&color=purple)](https://codecov.io/gh/goodm4ven/PACKAGE_LARAVEL_arabicable)
+[![Total Downloads](https://img.shields.io/packagist/dt/goodm4ven/arabicable.svg?style=for-the-badge&color=blue)](https://packagist.org/packages/goodm4ven/arabicable)
 
 <img src="./.github/images/banner.png">
 
