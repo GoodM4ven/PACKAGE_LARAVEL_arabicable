@@ -1643,6 +1643,9 @@ class QuranReader extends Component
         }
 
         $candidates = [
+            base_path('resources/raw-data/quran/fonts/qpc-v2/p'.$pageNumber.'.woff2'),
+            dirname(base_path()).'/resources/raw-data/quran/fonts/qpc-v2/p'.$pageNumber.'.woff2',
+            base_path('vendor/goodm4ven/arabicable/resources/raw-data/quran/fonts/qpc-v2/p'.$pageNumber.'.woff2'),
             base_path('resources/raw-data/quran/fonts/qpc-v2/p'.$pageNumber.'.ttf'),
             dirname(base_path()).'/resources/raw-data/quran/fonts/qpc-v2/p'.$pageNumber.'.ttf',
             base_path('vendor/goodm4ven/arabicable/resources/raw-data/quran/fonts/qpc-v2/p'.$pageNumber.'.ttf'),

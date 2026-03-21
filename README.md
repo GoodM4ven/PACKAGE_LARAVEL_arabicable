@@ -487,6 +487,7 @@ This package is open-sourced software licensed under the [MIT license](LICENSE.m
 - [CAMeL Tools](https://github.com/CAMeL-Lab/camel_tools)
 - [ar-php](https://github.com/khaled-alshamaa/ar-php)
 - [Qul by Tarteel](https://qul.tarteel.ai/resources)
+- [Nuqaya](https://github.com/nuqayah)
 
 
 </div>
