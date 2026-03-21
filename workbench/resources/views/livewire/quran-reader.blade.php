@@ -186,7 +186,7 @@
                                     <style>
                                         @font-face {
                                             font-family: '{{ $qpcPageFontFamily }}';
-                                            src: url('{{ $qpcPageFontUrl }}') format('truetype');
+                                            src: url('{{ $qpcPageFontUrl }}');
                                             font-display: block;
                                         }
                                     </style>

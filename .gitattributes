@@ -20,6 +20,4 @@
 /phpstan-baseline.neon  export-ignore
 /phpstan.neon.dist      export-ignore
 /phpunit.xml.dist       export-ignore
-/resources/raw-data/quran/fonts export-ignore
-/resources/raw-data/quran/layouts/qpc-v2.db export-ignore
 /testbench.yaml         export-ignore
