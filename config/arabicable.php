@@ -39,6 +39,24 @@ return [
         'quran' => false,
     ],
 
+    'quran_fonts' => [
+        'surah_headers' => [
+            'preferred' => 'qcf-surah-header-color-regular',
+            'available' => [
+                'qcf-surah-header-color-regular' => [
+                    'family' => 'QcfSurahHeaderColor',
+                    'filename' => 'QCF_SurahHeader_COLOR-Regular.woff2',
+                    'format' => 'woff2',
+                ],
+                'surah-name-v2' => [
+                    'family' => 'SurahNameV2',
+                    'filename' => 'surah-name-v2.woff2',
+                    'format' => 'woff2',
+                ],
+            ],
+        ],
+    ],
+
     'special_characters' => [
         'harakat' => ['ِ', 'ُ', 'ٓ', 'ٰ', 'ْ', 'ٌ', 'ٍ', 'ً', 'ّ', 'َ', 'ـ', 'ٗ'],
 
@@ -132,5 +150,7 @@ return [
         'quran_exegesis_databases_dir' => $rawDataPath.'/quran/exegesis',
         'quran_layout_databases_dir' => $rawDataPath.'/quran/layouts',
         'quran_lexicon_databases_dir' => $rawDataPath.'/quran/lexicon',
+        'quran_fonts_dir' => $rawDataPath.'/quran/fonts',
+        'quran_surah_headers_fonts_dir' => $rawDataPath.'/quran/fonts/surah-headers',
     ],
 ];

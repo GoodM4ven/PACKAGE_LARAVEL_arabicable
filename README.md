@@ -281,6 +281,8 @@ Default source config keys:
 - `arabicable.data_sources.quran_exegesis_databases_dir`
 - `arabicable.data_sources.quran_layout_databases_dir`
 - `arabicable.data_sources.quran_lexicon_databases_dir`
+- `arabicable.data_sources.quran_fonts_dir`
+- `arabicable.data_sources.quran_surah_headers_fonts_dir`
 
 For tafsir / i'rab SQLite data:
 
@@ -325,6 +327,13 @@ php artisan vendor:publish --tag=arabicable-raw-data --force
 
 2. Use the included Quran font file (published under `public/vendor/arabicable/madina.woff2`), or replace it with your preferred DigitalKhatt-compatible font build.
 
+   Surah header fonts are also bundled and available in both locations:
+
+   - `resources/raw-data/quran/fonts/surah-headers/QCF_SurahHeader_COLOR-Regular.woff2`
+   - `resources/raw-data/quran/fonts/surah-headers/surah-name-v2.woff2`
+   - `public/vendor/arabicable/QCF_SurahHeader_COLOR-Regular.woff2`
+   - `public/vendor/arabicable/surah-name-v2.woff2`
+
 3. Define your Quran text class:
 
 ```css
@@ -337,9 +346,35 @@ php artisan vendor:publish --tag=arabicable-raw-data --force
 .font-quran {
   font-family: 'MadinaQuran', 'Amiri', serif;
 }
+
+.font-quran-surah-header {
+  font-family: 'QcfSurahHeaderColor', 'SurahNameV2', 'MadinaQuran', 'Amiri', serif;
+}
 ```
 
 4. Render Uthmani text with `.font-quran`, while using `text_searchable`/`token_searchable` fields for search queries.
+
+5. Optional package config for surah header font selection:
+
+```php
+'quran_fonts' => [
+    'surah_headers' => [
+        'preferred' => 'qcf-surah-header-color-regular',
+        'available' => [
+            'qcf-surah-header-color-regular' => [
+                'family' => 'QcfSurahHeaderColor',
+                'filename' => 'QCF_SurahHeader_COLOR-Regular.woff2',
+                'format' => 'woff2',
+            ],
+            'surah-name-v2' => [
+                'family' => 'SurahNameV2',
+                'filename' => 'surah-name-v2.woff2',
+                'format' => 'woff2',
+            ],
+        ],
+    ],
+],
+```
 
 If you integrate the external `digitalkhatt.js` stack, keep Arabicable as the search/index layer and use DigitalKhatt purely for display shaping.
 
