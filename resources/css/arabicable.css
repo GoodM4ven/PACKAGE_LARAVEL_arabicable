@@ -1,13 +1,29 @@
-@layer theme, base, components, utilities;
-
-@import 'tailwindcss/theme.css' layer(theme) theme(inline);
-@import 'tailwindcss/utilities.css' layer(utilities) source(none);
-
-@source "../js/**/*.js";
-@source "../views/**/*.blade.php";
-
 [x-cloak] {
     display: none !important;
 }
 
-@variant dark (&:where(.dark, .dark *));
+@font-face {
+    font-family: 'MadinaQuran';
+    src: url('/vendor/arabicable/madina.woff2') format('woff2');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'QcfSurahHeaderColor';
+    src: url('/vendor/arabicable/QCF_SurahHeader_COLOR-Regular.woff2') format('woff2');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'SurahNameV2';
+    src: url('/vendor/arabicable/surah-name-v2.woff2') format('woff2');
+    font-display: swap;
+}
+
+.font-quran {
+    font-family: 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;
+}
+
+.font-quran-surah-header {
+    font-family: 'SurahNameV2', 'QcfSurahHeaderColor', 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;
+}

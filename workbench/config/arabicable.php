@@ -41,7 +41,7 @@ return [
 
     'quran_fonts' => [
         'surah_headers' => [
-            'preferred' => 'qcf-surah-header-color-regular',
+            'preferred' => 'surah-name-v2',
             'available' => [
                 'qcf-surah-header-color-regular' => [
                     'family' => 'QcfSurahHeaderColor',
