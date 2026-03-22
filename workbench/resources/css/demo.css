@@ -77,3 +77,8 @@
     font-family: 'IBM Plex Sans Arabic', 'Manrope', ui-sans-serif, system-ui, sans-serif;
     line-height: 1;
 }
+
+.quran-surah-header-line {
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+}

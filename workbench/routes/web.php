@@ -31,7 +31,7 @@ Route::get('/qpc-v2-fonts/{page}', function (int $page) {
         }
     }
 
-    if (! is_string($fontPath) || $fontPath === '') {
+    if ($fontPath === null) {
         abort(404);
     }
 
@@ -42,3 +42,51 @@ Route::get('/qpc-v2-fonts/{page}', function (int $page) {
         'Cache-Control' => 'public, max-age=31536000, immutable',
     ]);
 })->whereNumber('page')->name('qpc-v2-font');
+
+Route::get('/quran-surah-header-fonts', function () {
+    $filename = trim((string) config('arabicable.quran_fonts.surah_headers.filename', 'surah-name-v4.ttf'));
+    $format = trim((string) config('arabicable.quran_fonts.surah_headers.format', 'ttf'));
+    $configuredSurahHeadersDir = trim((string) config('arabicable.data_sources.quran_surah_headers_fonts_dir', ''));
+    $configuredFontsDir = trim((string) config('arabicable.data_sources.quran_fonts_dir', ''));
+
+    if ($filename === '') {
+        abort(404);
+    }
+
+    $paths = [
+        $configuredSurahHeadersDir !== '' ? $configuredSurahHeadersDir.'/'.$filename : null,
+        $configuredFontsDir !== '' ? $configuredFontsDir.'/'.$filename : null,
+        base_path('resources/raw-data/quran/fonts/surah-headers/'.$filename),
+        dirname(base_path()).'/resources/raw-data/quran/fonts/surah-headers/'.$filename,
+        base_path('vendor/goodm4ven/arabicable/resources/raw-data/quran/fonts/surah-headers/'.$filename),
+        base_path('resources/raw-data/quran/fonts/'.$filename),
+        dirname(base_path()).'/resources/raw-data/quran/fonts/'.$filename,
+        base_path('vendor/goodm4ven/arabicable/resources/raw-data/quran/fonts/'.$filename),
+        base_path('vendor/goodm4ven/arabicable/resources/dist/'.$filename),
+    ];
+
+    $fontPath = null;
+
+    foreach ($paths as $path) {
+        if (! is_string($path) || $path === '') {
+            continue;
+        }
+
+        if (is_file($path)) {
+            $fontPath = $path;
+
+            break;
+        }
+    }
+
+    if ($fontPath === null) {
+        abort(404);
+    }
+
+    $isTrueType = in_array($format, ['ttf', 'truetype'], true) || str_ends_with($filename, '.ttf');
+
+    return response()->file($fontPath, [
+        'Content-Type' => $isTrueType ? 'font/ttf' : 'font/woff2',
+        'Cache-Control' => 'public, max-age=31536000, immutable',
+    ]);
+})->name('quran-surah-header-font');

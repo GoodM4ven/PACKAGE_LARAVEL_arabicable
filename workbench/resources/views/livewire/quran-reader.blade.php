@@ -192,6 +192,21 @@
                                     </style>
                                 @endif
 
+                                @if ($surahHeaderFontFamily !== null && $surahHeaderFontUrl !== null)
+                                    <style>
+                                        @font-face {
+                                            font-family: '{{ $surahHeaderFontFamily }}';
+
+                                            src: url('{{ $surahHeaderFontUrl }}') format('{{ $surahHeaderFontFormat ?? 'woff2' }}')@if ($surahHeaderFontDataUri !== null)
+                                                ,
+                                                url('{{ $surahHeaderFontDataUri }}') format('{{ $surahHeaderFontFormat ?? 'woff2' }}')
+                                            @endif
+                                            ;
+                                            font-display: block;
+                                        }
+                                    </style>
+                                @endif
+
                                 <div
                                     class="{{ !$useCenteredAyahLayout ? 'mx-auto w-[32rem] max-w-full space-y-7' : 'mx-auto max-w-[920px] space-y-7' }}">
                                     @foreach ($mushafLines as $line)
@@ -233,6 +248,13 @@
                                                             >۝{{ $word['ayah_number'] }}</span>
                                                         @endif
                                                     @endforeach
+                                                </div>
+                                            @elseif ($line['line_type'] === 'surah_name')
+                                                <div
+                                                    class="quran-surah-header-line text-center text-3xl text-emerald-100 sm:text-4xl"
+                                                    @if ($surahHeaderFontFamily !== null) style="font-family: '{{ $surahHeaderFontFamily }}', 'SurahNameV4', 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;" @endif
+                                                >
+                                                    {{ $line['text'] }}
                                                 </div>
                                             @else
                                                 <div

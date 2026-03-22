@@ -21,3 +21,9 @@
 /phpstan.neon.dist      export-ignore
 /phpunit.xml.dist       export-ignore
 /testbench.yaml         export-ignore
+
+# Keep binary assets untouched to avoid font/db corruption during checkout/export.
+*.woff2                 binary
+*.ttf                   binary
+*.db                    binary
+*.sqlite                binary

@@ -20,4 +20,4 @@ AGENTS.md
 boost.json
 CLAUDE.md
 codex.config.json
-database/*.sqlite
+database/*.sqlite*
