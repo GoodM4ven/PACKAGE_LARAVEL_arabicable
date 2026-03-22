@@ -196,7 +196,12 @@
                                     <style>
                                         @font-face {
                                             font-family: '{{ $surahHeaderFontFamily }}';
-                                            src: url('{{ $surahHeaderFontUrl }}') format('{{ $surahHeaderFontFormat ?? 'woff2' }}');
+
+                                            src: url('{{ $surahHeaderFontUrl }}') format('{{ $surahHeaderFontFormat ?? 'woff2' }}')@if ($surahHeaderFontDataUri !== null)
+                                                ,
+                                                url('{{ $surahHeaderFontDataUri }}') format('{{ $surahHeaderFontFormat ?? 'woff2' }}')
+                                            @endif
+                                            ;
                                             font-display: block;
                                         }
                                     </style>
@@ -247,7 +252,7 @@
                                             @elseif ($line['line_type'] === 'surah_name')
                                                 <div
                                                     class="quran-surah-header-line text-center text-3xl text-emerald-100 sm:text-4xl"
-                                                    @if ($surahHeaderFontFamily !== null) style="font-family: '{{ $surahHeaderFontFamily }}', 'QcfSurahHeaderColor', 'SurahNameV2', 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;" @endif
+                                                    @if ($surahHeaderFontFamily !== null) style="font-family: '{{ $surahHeaderFontFamily }}', 'SurahNameV4', 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;" @endif
                                                 >
                                                     {{ $line['text'] }}
                                                 </div>

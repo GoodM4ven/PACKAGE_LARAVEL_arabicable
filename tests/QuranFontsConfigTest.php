@@ -2,33 +2,35 @@
 
 declare(strict_types=1);
 
-it('ships configurable surah header fonts and package files', function (): void {
-    $available = config('arabicable.quran_fonts.surah_headers.available', []);
+use Workbench\App\Livewire\QuranReader;
 
-    expect($available)->toBeArray()
-        ->toHaveKeys(['qcf-surah-header-color-regular', 'surah-name-v2']);
+it('ships only v4 surah header font metadata and package files', function (): void {
+    $configured = config('arabicable.quran_fonts.surah_headers', []);
 
-    $expectedFonts = [
-        'qcf-surah-header-color-regular' => [
-            'family' => 'QcfSurahHeaderColor',
-            'filename' => 'QCF_SurahHeader_COLOR-Regular.woff2',
-        ],
-        'surah-name-v2' => [
-            'family' => 'SurahNameV2',
-            'filename' => 'surah-name-v2.woff2',
-        ],
-    ];
+    expect($configured)->toBeArray();
+    expect((string) ($configured['family'] ?? ''))->toBe('SurahNameV4');
+    expect((string) ($configured['filename'] ?? ''))->toBe('surah-name-v4.ttf');
+    expect((string) ($configured['format'] ?? ''))->toBe('ttf');
+    expect(is_file(dirname(__DIR__).'/resources/raw-data/quran/fonts/surah-headers/surah-name-v4.ttf'))->toBeTrue();
+    expect(is_file(dirname(__DIR__).'/resources/dist/surah-name-v4.ttf'))->toBeTrue();
+});
 
-    foreach ($expectedFonts as $fontKey => $fontMeta) {
-        $configured = $available[$fontKey] ?? [];
-        $filename = (string) ($fontMeta['filename'] ?? '');
-        $rawDataFile = dirname(__DIR__).'/resources/raw-data/quran/fonts/surah-headers/'.$filename;
-        $distFile = dirname(__DIR__).'/resources/dist/'.$filename;
+it('maps surah header numbers to v4 glyph codepoints', function (): void {
+    $component = new QuranReader;
+    $reflection = new ReflectionClass($component);
+    $method = $reflection->getMethod('formatSurahHeaderLabel');
+    $method->setAccessible(true);
 
-        expect($configured)->toBeArray();
-        expect((string) ($configured['family'] ?? ''))->toBe((string) ($fontMeta['family'] ?? ''));
-        expect((string) ($configured['filename'] ?? ''))->toBe($filename);
-        expect(is_file($rawDataFile))->toBeTrue();
-        expect(is_file($distFile))->toBeTrue();
-    }
+    expect($method->invoke($component, 2))->toBe(mb_chr(0xE002, 'UTF-8'));
+    expect($method->invoke($component, 102))->toBe(mb_chr(0xE066, 'UTF-8'));
+    expect($method->invoke($component, 114))->toBe(mb_chr(0xE072, 'UTF-8'));
+});
+
+it('falls back to readable arabic surah label for invalid surah numbers', function (): void {
+    $component = new QuranReader;
+    $reflection = new ReflectionClass($component);
+    $method = $reflection->getMethod('formatSurahHeaderLabel');
+    $method->setAccessible(true);
+
+    expect($method->invoke($component, 0))->toBe('سورة');
 });

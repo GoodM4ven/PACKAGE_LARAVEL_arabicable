@@ -43,34 +43,9 @@ Route::get('/qpc-v2-fonts/{page}', function (int $page) {
     ]);
 })->whereNumber('page')->name('qpc-v2-font');
 
-$configuredSurahHeaderFonts = config('arabicable.quran_fonts.surah_headers.available', []);
-$surahHeaderFonts = is_array($configuredSurahHeaderFonts) ? $configuredSurahHeaderFonts : [];
-
-if ($surahHeaderFonts === []) {
-    $surahHeaderFonts = [
-        'qcf-surah-header-color-regular' => [
-            'family' => 'QcfSurahHeaderColor',
-            'filename' => 'QCF_SurahHeader_COLOR-Regular.woff2',
-            'format' => 'woff2',
-        ],
-        'surah-name-v2' => [
-            'family' => 'SurahNameV2',
-            'filename' => 'surah-name-v2.woff2',
-            'format' => 'woff2',
-        ],
-    ];
-}
-
-$surahHeaderFontKeys = array_values(array_filter(
-    array_keys($surahHeaderFonts),
-    static fn (mixed $value): bool => is_string($value) && $value !== '',
-));
-
-Route::get('/quran-surah-header-fonts/{font}', function (string $font) use ($surahHeaderFonts) {
-    $fontKey = trim($font);
-    $fontConfig = $surahHeaderFonts[$fontKey] ?? null;
-    $filename = is_array($fontConfig) ? trim((string) ($fontConfig['filename'] ?? '')) : '';
-    $format = is_array($fontConfig) ? trim((string) ($fontConfig['format'] ?? 'woff2')) : 'woff2';
+Route::get('/quran-surah-header-fonts', function () {
+    $filename = trim((string) config('arabicable.quran_fonts.surah_headers.filename', 'surah-name-v4.ttf'));
+    $format = trim((string) config('arabicable.quran_fonts.surah_headers.format', 'ttf'));
     $configuredSurahHeadersDir = trim((string) config('arabicable.data_sources.quran_surah_headers_fonts_dir', ''));
     $configuredFontsDir = trim((string) config('arabicable.data_sources.quran_fonts_dir', ''));
 
@@ -114,4 +89,4 @@ Route::get('/quran-surah-header-fonts/{font}', function (string $font) use ($sur
         'Content-Type' => $isTrueType ? 'font/ttf' : 'font/woff2',
         'Cache-Control' => 'public, max-age=31536000, immutable',
     ]);
-})->whereIn('font', $surahHeaderFontKeys)->name('quran-surah-header-font');
+})->name('quran-surah-header-font');

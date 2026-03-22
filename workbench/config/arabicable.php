@@ -41,19 +41,9 @@ return [
 
     'quran_fonts' => [
         'surah_headers' => [
-            'preferred' => 'surah-name-v2',
-            'available' => [
-                'qcf-surah-header-color-regular' => [
-                    'family' => 'QcfSurahHeaderColor',
-                    'filename' => 'QCF_SurahHeader_COLOR-Regular.woff2',
-                    'format' => 'woff2',
-                ],
-                'surah-name-v2' => [
-                    'family' => 'SurahNameV2',
-                    'filename' => 'surah-name-v2.woff2',
-                    'format' => 'woff2',
-                ],
-            ],
+            'family' => 'SurahNameV4',
+            'filename' => 'surah-name-v4.ttf',
+            'format' => 'ttf',
         ],
     ],
 

@@ -13,6 +13,8 @@ use Livewire\Component;
 
 class QuranReader extends Component
 {
+    private const SURAH_NAME_FONT_V4_CODEPOINT_START = 0xE001;
+
     public string $query = '';
 
     public int $pageNumber = 1;
@@ -259,6 +261,7 @@ class QuranReader extends Component
             'surahHeaderFontFamily' => $surahHeaderFont['family'] ?? null,
             'surahHeaderFontUrl' => $surahHeaderFont['url'] ?? null,
             'surahHeaderFontFormat' => $surahHeaderFont['format'] ?? null,
+            'surahHeaderFontDataUri' => $surahHeaderFont['data_uri'] ?? null,
             'useCenteredAyahLayout' => $useCenteredAyahLayout,
         ]);
     }
@@ -848,7 +851,7 @@ class QuranReader extends Component
 
             if ($lineText === '' && $lineType === 'surah_name') {
                 $surahNumber = $lineRow->surah_number !== null ? (int) $lineRow->surah_number : null;
-                $lineText = $this->formatSurahTitle($surahNumber ?? 0);
+                $lineText = $this->formatSurahHeaderLabel($surahNumber ?? 0);
             }
 
             $lines[] = [
@@ -900,7 +903,7 @@ class QuranReader extends Component
                         'surah_number' => $lineSurahNumber,
                         'segments' => [],
                         'words' => [],
-                        'text' => $this->formatSurahTitle($lineSurahNumber),
+                        'text' => $this->formatSurahHeaderLabel($lineSurahNumber),
                     ];
 
                     if ($lineSurahNumber !== 9) {
@@ -1580,6 +1583,36 @@ class QuranReader extends Component
         return 'سورة '.$arabicName.' ('.$surahNumber.')';
     }
 
+    private function formatSurahHeaderLabel(int $surahNumber): string
+    {
+        $glyph = $this->resolveSurahHeaderGlyph($surahNumber);
+
+        if ($glyph !== null) {
+            return $glyph;
+        }
+
+        if ($surahNumber < 1) {
+            return 'سورة';
+        }
+
+        $arabicName = $this->resolveSurahArabicName($surahNumber);
+
+        if ($arabicName === null || $arabicName === '') {
+            return 'سورة';
+        }
+
+        return 'سورة '.$arabicName;
+    }
+
+    private function resolveSurahHeaderGlyph(int $surahNumber): ?string
+    {
+        if ($surahNumber < 1 || $surahNumber > 114) {
+            return null;
+        }
+
+        return mb_chr(self::SURAH_NAME_FONT_V4_CODEPOINT_START + $surahNumber - 1, 'UTF-8');
+    }
+
     private function resolveSurahArabicName(int $surahNumber): ?string
     {
         $surahNames = $this->loadSurahArabicNames();
@@ -1679,70 +1712,74 @@ class QuranReader extends Component
     }
 
     /**
-     * @return array{family: string, url: string, format: string}|null
+     * @return array{family: string, url: string, format: string, data_uri: string|null}|null
      */
     private function resolveSurahHeaderFont(): ?array
     {
-        $configuredFonts = config('arabicable.quran_fonts.surah_headers.available', []);
-        $fonts = is_array($configuredFonts) ? $configuredFonts : [];
+        $family = trim((string) config('arabicable.quran_fonts.surah_headers.family', 'SurahNameV4'));
+        $filename = trim((string) config('arabicable.quran_fonts.surah_headers.filename', 'surah-name-v4.ttf'));
+        $format = trim((string) config('arabicable.quran_fonts.surah_headers.format', 'ttf'));
+        $configuredSurahHeadersDir = trim((string) config('arabicable.data_sources.quran_surah_headers_fonts_dir', ''));
+        $configuredFontsDir = trim((string) config('arabicable.data_sources.quran_fonts_dir', ''));
 
-        if ($fonts === []) {
+        if ($filename === '' || $family === '') {
             return null;
         }
 
-        $preferredKey = trim((string) config('arabicable.quran_fonts.surah_headers.preferred', ''));
-        $configuredSurahHeadersDir = trim((string) config('arabicable.data_sources.quran_surah_headers_fonts_dir', ''));
-        $configuredFontsDir = trim((string) config('arabicable.data_sources.quran_fonts_dir', ''));
-        $orderedKeys = array_values(array_unique(array_filter(
-            [$preferredKey, ...array_keys($fonts)],
-            static fn (mixed $value): bool => is_string($value) && trim($value) !== '',
-        )));
+        $paths = [
+            $configuredSurahHeadersDir !== '' ? $configuredSurahHeadersDir.'/'.$filename : null,
+            $configuredFontsDir !== '' ? $configuredFontsDir.'/'.$filename : null,
+            base_path('resources/raw-data/quran/fonts/surah-headers/'.$filename),
+            dirname(base_path()).'/resources/raw-data/quran/fonts/surah-headers/'.$filename,
+            base_path('vendor/goodm4ven/arabicable/resources/raw-data/quran/fonts/surah-headers/'.$filename),
+            base_path('resources/raw-data/quran/fonts/'.$filename),
+            dirname(base_path()).'/resources/raw-data/quran/fonts/'.$filename,
+            base_path('vendor/goodm4ven/arabicable/resources/raw-data/quran/fonts/'.$filename),
+            base_path('vendor/goodm4ven/arabicable/resources/dist/'.$filename),
+        ];
 
-        foreach ($orderedKeys as $fontKey) {
-            $font = $fonts[$fontKey] ?? null;
-
-            if (! is_array($font)) {
+        foreach ($paths as $path) {
+            if (! is_string($path) || $path === '') {
                 continue;
             }
 
-            $filename = trim((string) ($font['filename'] ?? ''));
-            $family = trim((string) ($font['family'] ?? ''));
-            $format = trim((string) ($font['format'] ?? 'woff2'));
-
-            if ($filename === '' || $family === '') {
+            if (! is_file($path)) {
                 continue;
             }
 
-            $paths = [
-                $configuredSurahHeadersDir !== '' ? $configuredSurahHeadersDir.'/'.$filename : null,
-                $configuredFontsDir !== '' ? $configuredFontsDir.'/'.$filename : null,
-                base_path('resources/raw-data/quran/fonts/surah-headers/'.$filename),
-                dirname(base_path()).'/resources/raw-data/quran/fonts/surah-headers/'.$filename,
-                base_path('vendor/goodm4ven/arabicable/resources/raw-data/quran/fonts/surah-headers/'.$filename),
-                base_path('resources/raw-data/quran/fonts/'.$filename),
-                dirname(base_path()).'/resources/raw-data/quran/fonts/'.$filename,
-                base_path('vendor/goodm4ven/arabicable/resources/raw-data/quran/fonts/'.$filename),
-                base_path('vendor/goodm4ven/arabicable/resources/dist/'.$filename),
+            return [
+                'family' => $family,
+                'url' => route('quran-surah-header-font'),
+                'format' => in_array($format, ['ttf', 'truetype'], true) ? 'truetype' : 'woff2',
+                'data_uri' => $this->buildFontDataUri($path, $format),
             ];
-
-            foreach ($paths as $path) {
-                if (! is_string($path) || $path === '') {
-                    continue;
-                }
-
-                if (! is_file($path)) {
-                    continue;
-                }
-
-                return [
-                    'family' => $family,
-                    'url' => route('quran-surah-header-font', ['font' => $fontKey]),
-                    'format' => in_array($format, ['ttf', 'truetype'], true) ? 'truetype' : 'woff2',
-                ];
-            }
         }
 
         return null;
+    }
+
+    private function buildFontDataUri(string $path, string $format): ?string
+    {
+        static $cache = [];
+
+        $cacheKey = $path.'|'.$format;
+
+        if (array_key_exists($cacheKey, $cache)) {
+            return $cache[$cacheKey];
+        }
+
+        $fontBinary = @file_get_contents($path);
+
+        if (! is_string($fontBinary) || $fontBinary === '') {
+            $cache[$cacheKey] = null;
+
+            return null;
+        }
+
+        $mimeType = in_array($format, ['ttf', 'truetype'], true) ? 'font/ttf' : 'font/woff2';
+        $cache[$cacheKey] = 'data:'.$mimeType.';base64,'.base64_encode($fontBinary);
+
+        return $cache[$cacheKey];
     }
 
     /**
