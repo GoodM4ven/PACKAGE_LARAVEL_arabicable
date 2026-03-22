@@ -25,5 +25,6 @@
 }
 
 .font-quran-surah-header {
-    font-family: 'SurahNameV2', 'QcfSurahHeaderColor', 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;
+    font-family:
+        'SurahNameV2', 'QcfSurahHeaderColor', 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;
 }
