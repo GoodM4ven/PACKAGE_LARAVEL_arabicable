@@ -9,6 +9,7 @@ it('keeps published package css focused on reusable package styles', function ()
     expect($contents)->not->toBeFalse();
     expect($contents)->toContain('.font-quran');
     expect($contents)->toContain('.font-quran-surah-header');
+    expect($contents)->toContain('.font-quran-basmalah');
     expect($contents)->not->toContain('.quran-ayah-line-run');
     expect($contents)->not->toContain('.quran-word-button');
     expect($contents)->not->toContain('.quran-segment-hover');

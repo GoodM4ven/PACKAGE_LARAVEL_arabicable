@@ -207,6 +207,21 @@
                                     </style>
                                 @endif
 
+                                @if ($basmalahFontFamily !== null && $basmalahFontUrl !== null)
+                                    <style>
+                                        @font-face {
+                                            font-family: '{{ $basmalahFontFamily }}';
+
+                                            src: url('{{ $basmalahFontUrl }}') format('{{ $basmalahFontFormat ?? 'woff2' }}')@if ($basmalahFontDataUri !== null)
+                                                ,
+                                                url('{{ $basmalahFontDataUri }}') format('{{ $basmalahFontFormat ?? 'woff2' }}')
+                                            @endif
+                                            ;
+                                            font-display: block;
+                                        }
+                                    </style>
+                                @endif
+
                                 <div
                                     class="{{ !$useCenteredAyahLayout ? 'mx-auto w-[32rem] max-w-full space-y-7' : 'mx-auto max-w-[920px] space-y-7' }}">
                                     @foreach ($mushafLines as $line)
@@ -217,9 +232,15 @@
                                                 $qpcPageFontFamily !== null
                                                     ? "font-family: '{$qpcPageFontFamily}', 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;"
                                                     : null;
-                                            $metaLineStyle =
+                                            $metaLineFamily =
                                                 $line['line_type'] === 'basmallah'
-                                                    ? "font-family: 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;"
+                                                    ? ((int) ($line['surah_number'] ?? 0) === 1
+                                                        ? 'MadinaQuran'
+                                                        : $basmalahFontFamily ?? 'MadinaQuran')
+                                                    : null;
+                                            $metaLineStyle =
+                                                $metaLineFamily !== null
+                                                    ? "font-family: '{$metaLineFamily}', 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;"
                                                     : null;
                                         @endphp
                                         <div
