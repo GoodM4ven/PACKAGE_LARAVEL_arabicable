@@ -217,6 +217,10 @@
                                                 $qpcPageFontFamily !== null
                                                     ? "font-family: '{$qpcPageFontFamily}', 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;"
                                                     : null;
+                                            $metaLineStyle =
+                                                $line['line_type'] === 'basmallah'
+                                                    ? "font-family: 'MadinaQuran', 'Amiri', 'Traditional Arabic', serif;"
+                                                    : null;
                                         @endphp
                                         <div
                                             class="{{ $isRectangularAyahLine ? 'text-right' : ($line['is_centered'] ? 'text-center' : '') }}"
@@ -258,7 +262,9 @@
                                                 </div>
                                             @else
                                                 <div
-                                                    class="font-quran text-2xl leading-[2.1] text-emerald-100 sm:text-3xl">
+                                                    class="font-quran text-2xl leading-[2.1] text-emerald-100 sm:text-3xl"
+                                                    @if ($metaLineStyle !== null) style="{{ $metaLineStyle }}" @endif
+                                                >
                                                     {{ $line['text'] }}
                                                 </div>
                                             @endif
