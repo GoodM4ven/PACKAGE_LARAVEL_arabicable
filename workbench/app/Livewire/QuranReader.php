@@ -15,6 +15,8 @@ class QuranReader extends Component
 {
     private const SURAH_NAME_FONT_V4_CODEPOINT_START = 0xE001;
 
+    private const BASMALAH_TEXT = 'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ';
+
     public string $query = '';
 
     public int $pageNumber = 1;
@@ -120,6 +122,10 @@ class QuranReader extends Component
                 'surahHeaderFontFamily' => null,
                 'surahHeaderFontUrl' => null,
                 'surahHeaderFontFormat' => null,
+                'basmalahFontFamily' => null,
+                'basmalahFontUrl' => null,
+                'basmalahFontFormat' => null,
+                'basmalahFontDataUri' => null,
                 'useCenteredAyahLayout' => true,
             ]);
         }
@@ -139,6 +145,7 @@ class QuranReader extends Component
 
         $qpcPageFont = $this->resolveQpcPageFont($pageNumber);
         $surahHeaderFont = $this->resolveSurahHeaderFont();
+        $basmalahFont = $this->resolveBasmalahFont();
 
         $searchQuery = trim($this->normalizeQuranSearchQuery($this->query));
         $searchMatches = $searchQuery !== ''
@@ -262,6 +269,10 @@ class QuranReader extends Component
             'surahHeaderFontUrl' => $surahHeaderFont['url'] ?? null,
             'surahHeaderFontFormat' => $surahHeaderFont['format'] ?? null,
             'surahHeaderFontDataUri' => $surahHeaderFont['data_uri'] ?? null,
+            'basmalahFontFamily' => $basmalahFont['family'] ?? null,
+            'basmalahFontUrl' => $basmalahFont['url'] ?? null,
+            'basmalahFontFormat' => $basmalahFont['format'] ?? null,
+            'basmalahFontDataUri' => $basmalahFont['data_uri'] ?? null,
             'useCenteredAyahLayout' => $useCenteredAyahLayout,
         ]);
     }
@@ -846,7 +857,7 @@ class QuranReader extends Component
             }
 
             if ($lineText === '' && $lineType === 'basmallah') {
-                $lineText = 'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ';
+                $lineText = $this->formatBasmalahLabel($lineRow->surah_number !== null ? (int) $lineRow->surah_number : null);
             }
 
             if ($lineText === '' && $lineType === 'surah_name') {
@@ -915,7 +926,7 @@ class QuranReader extends Component
                             'surah_number' => $lineSurahNumber,
                             'segments' => [],
                             'words' => [],
-                            'text' => 'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
+                            'text' => $this->formatBasmalahLabel($lineSurahNumber),
                         ];
                     }
                 }
@@ -1604,6 +1615,73 @@ class QuranReader extends Component
         return 'سورة '.$arabicName;
     }
 
+    private function formatBasmalahLabel(?int $surahNumber = null): string
+    {
+        if ($surahNumber === 1) {
+            return self::BASMALAH_TEXT;
+        }
+
+        $variant = $this->resolveBasmalahVariant();
+        $glyph = trim((string) ($variant['glyph'] ?? ''));
+
+        if ($glyph !== '') {
+            return $glyph;
+        }
+
+        $text = trim((string) ($variant['text'] ?? ''));
+
+        return $text !== '' ? $text : self::BASMALAH_TEXT;
+    }
+
+    /**
+     * @return array{family: string, filename: string|null, format: string, glyph: string|null, text: string|null}
+     */
+    private function resolveBasmalahVariant(): array
+    {
+        $preferred = trim((string) config('arabicable.quran_fonts.basmalah.preferred', ''));
+        $available = config('arabicable.quran_fonts.basmalah.available', []);
+        $fallback = [
+            'family' => 'MadinaQuran',
+            'filename' => null,
+            'format' => 'woff2',
+            'glyph' => null,
+            'text' => self::BASMALAH_TEXT,
+        ];
+
+        if (! is_array($available) || $available === []) {
+            return $fallback;
+        }
+
+        $variant = is_array($available[$preferred] ?? null) ? $available[$preferred] : null;
+
+        if (! is_array($variant)) {
+            $firstVariant = reset($available);
+            $variant = is_array($firstVariant) ? $firstVariant : null;
+        }
+
+        if (! is_array($variant)) {
+            return $fallback;
+        }
+
+        $family = trim((string) ($variant['family'] ?? ''));
+        $filename = trim((string) ($variant['filename'] ?? ''));
+        $format = trim((string) ($variant['format'] ?? ''));
+        $glyph = trim((string) ($variant['glyph'] ?? ''));
+        $text = trim((string) ($variant['text'] ?? ''));
+
+        if ($family === '') {
+            $family = $fallback['family'];
+        }
+
+        return [
+            'family' => $family,
+            'filename' => $filename !== '' ? $filename : null,
+            'format' => $this->resolveFontFormatFromFilename($filename, $format !== '' ? $format : $fallback['format']),
+            'glyph' => $glyph !== '' ? $glyph : null,
+            'text' => $text !== '' ? $text : null,
+        ];
+    }
+
     private function resolveSurahHeaderGlyph(int $surahNumber): ?string
     {
         if ($surahNumber < 1 || $surahNumber > 114) {
@@ -1726,6 +1804,89 @@ class QuranReader extends Component
             return null;
         }
 
+        $path = $this->resolveQuranFontPath($filename, $configuredSurahHeadersDir, $configuredFontsDir);
+
+        if (! is_string($path) || $path === '') {
+            return null;
+        }
+
+        $normalizedFormat = $this->resolveFontFormatFromFilename($filename, $format);
+
+        return [
+            'family' => $family,
+            'url' => route('quran-surah-header-font'),
+            'format' => $normalizedFormat,
+            'data_uri' => $this->buildFontDataUri($path, $normalizedFormat),
+        ];
+    }
+
+    /**
+     * @return array{family: string, url: string|null, format: string, data_uri: string|null}|null
+     */
+    private function resolveBasmalahFont(): ?array
+    {
+        $variant = $this->resolveBasmalahVariant();
+        $family = trim($variant['family']);
+        $filename = trim((string) ($variant['filename'] ?? ''));
+        $format = trim($variant['format']);
+        $configuredSurahHeadersDir = trim((string) config('arabicable.data_sources.quran_surah_headers_fonts_dir', ''));
+        $configuredFontsDir = trim((string) config('arabicable.data_sources.quran_fonts_dir', ''));
+
+        if ($family === '') {
+            return null;
+        }
+
+        if ($filename === '') {
+            $normalizedFormat = $this->resolveFontFormatFromFilename('', $format);
+
+            return [
+                'family' => $family,
+                'url' => null,
+                'format' => $normalizedFormat,
+                'data_uri' => null,
+            ];
+        }
+
+        $path = $this->resolveQuranFontPath($filename, $configuredSurahHeadersDir, $configuredFontsDir);
+
+        if (! is_string($path) || $path === '') {
+            $normalizedFormat = $this->resolveFontFormatFromFilename($filename, $format);
+
+            return [
+                'family' => $family,
+                'url' => null,
+                'format' => $normalizedFormat,
+                'data_uri' => null,
+            ];
+        }
+
+        $normalizedFormat = $this->resolveFontFormatFromFilename($filename, $format);
+
+        return [
+            'family' => $family,
+            'url' => route('quran-basmalah-font'),
+            'format' => $normalizedFormat,
+            'data_uri' => $this->buildFontDataUri($path, $normalizedFormat),
+        ];
+    }
+
+    private function resolveFontFormatFromFilename(string $filename, string $format): string
+    {
+        $normalized = strtolower(trim($format));
+
+        if ($normalized === '' && str_ends_with(strtolower($filename), '.ttf')) {
+            $normalized = 'ttf';
+        }
+
+        return in_array($normalized, ['ttf', 'truetype'], true) ? 'truetype' : 'woff2';
+    }
+
+    private function resolveQuranFontPath(string $filename, string $configuredSurahHeadersDir = '', string $configuredFontsDir = ''): ?string
+    {
+        if ($filename === '') {
+            return null;
+        }
+
         $paths = [
             $configuredSurahHeadersDir !== '' ? $configuredSurahHeadersDir.'/'.$filename : null,
             $configuredFontsDir !== '' ? $configuredFontsDir.'/'.$filename : null,
@@ -1736,23 +1897,15 @@ class QuranReader extends Component
             dirname(base_path()).'/resources/raw-data/quran/fonts/'.$filename,
             base_path('vendor/goodm4ven/arabicable/resources/raw-data/quran/fonts/'.$filename),
             base_path('vendor/goodm4ven/arabicable/resources/dist/'.$filename),
+            base_path('public/vendor/arabicable/'.$filename),
         ];
 
         foreach ($paths as $path) {
-            if (! is_string($path) || $path === '') {
+            if (! is_string($path) || $path === '' || ! is_file($path)) {
                 continue;
             }
 
-            if (! is_file($path)) {
-                continue;
-            }
-
-            return [
-                'family' => $family,
-                'url' => route('quran-surah-header-font'),
-                'format' => in_array($format, ['ttf', 'truetype'], true) ? 'truetype' : 'woff2',
-                'data_uri' => $this->buildFontDataUri($path, $format),
-            ];
+            return $path;
         }
 
         return null;
