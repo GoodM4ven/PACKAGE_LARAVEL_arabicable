@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Workbench\App\Livewire;
 
 use GoodMaven\Arabicable\Facades\ArabicFilter;
+use GoodMaven\Arabicable\Support\Quran\QuranSearchText;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -332,10 +333,10 @@ class QuranReader extends Component
      */
     private function buildSearchMatches(string $searchQuery, int $limit, bool $hasTypedWordColumn): array
     {
-        $tokens = array_values(array_unique(array_filter(
+        $tokens = QuranSearchText::prepareTokens(array_values(array_unique(array_filter(
             preg_split('/\s+/u', trim($searchQuery)) ?: [],
             static fn (string $token): bool => $token !== '',
-        )));
+        ))));
 
         if ($tokens === []) {
             return [];
@@ -394,7 +395,12 @@ class QuranReader extends Component
      */
     private function collectVerseIdsByExactPhrase(string $searchQuery, int $limit): array
     {
-        $queryVariants = $this->expandSearchTextVariants($searchQuery);
+        $queryVariants = QuranSearchText::expandStrictExactPhraseVariants($searchQuery);
+
+        if ($queryVariants === []) {
+            return [];
+        }
+
         $builder = DB::table('quran_verses');
 
         $builder->where(function (Builder $whereBuilder) use ($queryVariants): void {
@@ -1403,37 +1409,7 @@ class QuranReader extends Component
 
     private function normalizeQuranSearchQuery(string $text): string
     {
-        $prepared = strtr($text, [
-            'ٱ' => 'ا',
-            'ٲ' => 'ا',
-            'ٳ' => 'ا',
-            'ٵ' => 'ا',
-            'ی' => 'ي',
-            'ى' => 'ي',
-            'ے' => 'ي',
-            'ۍ' => 'ي',
-            'ې' => 'ي',
-            'ۑ' => 'ي',
-            'ک' => 'ك',
-        ]);
-
-        $prepared = preg_replace('/([\p{Arabic}])\x{0670}/u', '$1ا', $prepared) ?? $prepared;
-        $prepared = preg_replace('/\x{0670}/u', 'ا', $prepared) ?? $prepared;
-
-        $normalized = ArabicFilter::forSearch($prepared);
-
-        return strtr($normalized, [
-            'الرحمان' => 'الرحمن',
-            'رحمان' => 'رحمن',
-            'الصلوة' => 'الصلاة',
-            'صلوة' => 'صلاة',
-            'الزكوة' => 'الزكاة',
-            'زكوة' => 'زكاة',
-            'الحيوة' => 'الحياة',
-            'حيوة' => 'حياة',
-            'الربوا' => 'الربا',
-            'ربوا' => 'ربا',
-        ]);
+        return QuranSearchText::normalizeQuery($text);
     }
 
     /**
@@ -1441,82 +1417,7 @@ class QuranReader extends Component
      */
     private function expandSearchTextVariants(string $text): array
     {
-        $trimmed = trim($text);
-
-        if ($trimmed === '') {
-            return [];
-        }
-
-        $withoutConjunctions = $this->stripLeadingConjunctionsFromPhrase($trimmed);
-
-        $variants = [
-            $trimmed,
-            strtr($trimmed, ['ي' => 'ی', 'ى' => 'ی', 'ك' => 'ک']),
-            strtr($trimmed, ['ی' => 'ي', 'ى' => 'ي', 'ک' => 'ك']),
-            strtr($trimmed, ['الرحمن' => 'الرحمان', 'رحمن' => 'رحمان']),
-            strtr($trimmed, ['الرحمان' => 'الرحمن', 'رحمان' => 'رحمن']),
-            $withoutConjunctions,
-            $this->normalizeQuestionVerbSpellingsInPhrase($trimmed),
-            $this->normalizeQuestionVerbSpellingsInPhrase($withoutConjunctions),
-        ];
-
-        $normalized = [];
-
-        foreach ($variants as $variant) {
-            $value = trim($variant);
-
-            if ($value === '') {
-                continue;
-            }
-
-            $normalized[$value] = true;
-        }
-
-        return array_keys($normalized);
-    }
-
-    private function normalizeQuestionVerbSpellingsInPhrase(string $text): string
-    {
-        $tokens = preg_split('/\s+/u', trim($text)) ?: [];
-
-        if ($tokens === []) {
-            return '';
-        }
-
-        $normalized = [];
-
-        foreach ($tokens as $token) {
-            $normalized[] = $this->normalizeQuestionVerbToken($token);
-        }
-
-        return trim(implode(' ', $normalized));
-    }
-
-    private function normalizeQuestionVerbToken(string $token): string
-    {
-        $trimmed = trim($token);
-
-        if ($trimmed === '') {
-            return '';
-        }
-
-        $patterns = [
-            '/^فاسال/u' => 'فسل',
-            '/^فسال/u' => 'فسل',
-            '/^واسال/u' => 'وسل',
-            '/^وسال/u' => 'وسل',
-            '/^اسال/u' => 'سل',
-        ];
-
-        foreach ($patterns as $pattern => $replacement) {
-            if (preg_match($pattern, $trimmed) !== 1) {
-                continue;
-            }
-
-            return preg_replace($pattern, $replacement, $trimmed) ?? $trimmed;
-        }
-
-        return $trimmed;
+        return QuranSearchText::expandVariants($text);
     }
 
     private function addBoundedPhraseConditions(Builder $builder, string $column, string $variant): void
@@ -1550,33 +1451,6 @@ class QuranReader extends Component
         ));
 
         return $surahHeaderCount >= 2 && $pageNumber >= 587;
-    }
-
-    private function stripLeadingConjunctionsFromPhrase(string $text): string
-    {
-        $tokens = preg_split('/\s+/u', trim($text)) ?: [];
-        $normalized = [];
-
-        foreach ($tokens as $token) {
-            $normalized[] = $this->stripLeadingConjunction($token);
-        }
-
-        return trim(implode(' ', $normalized));
-    }
-
-    private function stripLeadingConjunction(string $token): string
-    {
-        $trimmed = trim($token);
-
-        if (mb_strlen($trimmed) < 3) {
-            return $trimmed;
-        }
-
-        if (preg_match('/^[وف][\p{Arabic}]/u', $trimmed) !== 1) {
-            return $trimmed;
-        }
-
-        return mb_substr($trimmed, 1);
     }
 
     private function formatSurahTitle(int $surahNumber): string

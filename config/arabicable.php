@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 use GoodMaven\Arabicable\Database\Factories\CommonArabicTextFactory;
 use GoodMaven\Arabicable\Models\CommonArabicText;
 
