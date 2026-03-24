@@ -220,3 +220,13 @@ it('treats فاسأل as the same query family as فسأل', function (): void {
         ->not->toContain(65002)
         ->and($pastForm)->toContain(65001);
 });
+
+it('matches hidden-character variants through package defaults', function (): void {
+    $hiddenCharsQuery = "ف\u{200F}اسأل";
+    $hiddenCharResults = quranReaderSearchAyahIndexes($hiddenCharsQuery);
+
+    expect($hiddenCharResults)
+        ->not->toBeEmpty()
+        ->toContain(65001)
+        ->not->toContain(65002);
+});
