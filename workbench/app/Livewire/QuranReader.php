@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Workbench\App\Livewire;
 
 use GoodMaven\Arabicable\Facades\ArabicFilter;
+use GoodMaven\Arabicable\Support\Quran\QpcWordsDatabase;
 use GoodMaven\Arabicable\Support\Quran\QuranSearchText;
+use GoodMaven\Arabicable\Support\Quran\QuranWordCopyText;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -714,6 +716,7 @@ class QuranReader extends Component
         }
 
         $displayWordsByIndex = [];
+        $copyWordsByAyahPosition = [];
 
         if ($wordRangeStart !== null && $wordRangeEnd !== null) {
             $displayWordsByIndex = $this->loadQpcDisplayWordsByIndex($wordRangeStart, $wordRangeEnd + 1);
@@ -725,6 +728,7 @@ class QuranReader extends Component
                     'global_word_index',
                     'surah_number',
                     'ayah_number',
+                    'token_searchable_typed',
                     'token_uthmani',
                 ])
                 ->whereBetween('global_word_index', [$wordRangeStart, $wordRangeEnd + 1])
@@ -732,11 +736,21 @@ class QuranReader extends Component
                 ->get();
 
             foreach ($fallbackWords as $word) {
+                $fallbackText = QuranWordCopyText::normalizeToken(
+                    $word->token_uthmani,
+                    $word->token_searchable_typed,
+                );
+
+                if ($fallbackText === null) {
+                    continue;
+                }
+
                 $displayWordsByIndex[(int) $word->global_word_index] = [
                     'global_word_index' => (int) $word->global_word_index,
                     'surah_number' => (int) $word->surah_number,
                     'ayah_number' => (int) $word->ayah_number,
-                    'text' => trim((string) $word->token_uthmani),
+                    'text' => $fallbackText,
+                    'copy_text' => $fallbackText,
                     'is_glyph' => false,
                 ];
             }
@@ -753,9 +767,35 @@ class QuranReader extends Component
 
         unset($surahNumbers[0], $ayahNumbers[0]);
 
+        if ($displayWordsByIndex !== [] && Schema::hasTable('quran_words')) {
+            $copyWordRows = DB::table('quran_words')
+                ->select([
+                    'surah_number',
+                    'ayah_number',
+                    'word_position',
+                    'token_uthmani',
+                    'token_searchable_typed',
+                ])
+                ->whereIn('surah_number', array_keys($surahNumbers))
+                ->whereIn('ayah_number', array_keys($ayahNumbers))
+                ->orderBy('surah_number')
+                ->orderBy('ayah_number')
+                ->orderBy('word_position')
+                ->get();
+
+            $copyWordsByAyahPosition = QuranWordCopyText::buildMapByAyahPosition($copyWordRows);
+        }
+
         if ($surahNumbers !== [] && $ayahNumbers !== []) {
             $verseRows = DB::table('quran_verses')
-                ->select(['id', 'ayah_index', 'surah_number', 'ayah_number'])
+                ->select([
+                    'id',
+                    'ayah_index',
+                    'surah_number',
+                    'ayah_number',
+                    'text_uthmani',
+                    'text_searchable_typed',
+                ])
                 ->whereIn('surah_number', array_keys($surahNumbers))
                 ->whereIn('ayah_number', array_keys($ayahNumbers))
                 ->get();
@@ -767,6 +807,10 @@ class QuranReader extends Component
                     'ayah_index' => (int) $verseRow->ayah_index,
                     'surah_number' => (int) $verseRow->surah_number,
                     'ayah_number' => (int) $verseRow->ayah_number,
+                    'copy_text' => QuranWordCopyText::normalizeToken(
+                        $verseRow->text_uthmani,
+                        $verseRow->text_searchable_typed,
+                    ) ?? '',
                 ];
             }
         }
@@ -786,9 +830,11 @@ class QuranReader extends Component
             if ($firstWordIndex !== null && $lastWordIndex !== null) {
                 $currentPairKey = null;
                 $currentSegmentTokens = [];
+                $currentSegmentCopyTokens = [];
                 $currentSegmentMeta = null;
                 $currentSegmentJoiner = '';
                 $currentSegmentEndsAyah = false;
+                $ayahWordPositions = [];
 
                 for ($wordIndex = $firstWordIndex; $wordIndex <= $lastWordIndex; $wordIndex++) {
                     $word = $displayWordsByIndex[$wordIndex] ?? null;
@@ -801,6 +847,15 @@ class QuranReader extends Component
                     $wordAyahNumber = (int) $word['ayah_number'];
                     $wordText = (string) $word['text'];
                     $pairKey = $wordSurahNumber.':'.$wordAyahNumber;
+                    $ayahWordPositions[$pairKey] = (int) ($ayahWordPositions[$pairKey] ?? 0) + 1;
+                    $wordPosition = $ayahWordPositions[$pairKey];
+                    $wordCopyTextKey = QuranWordCopyText::ayahWordKey($wordSurahNumber, $wordAyahNumber, $wordPosition);
+                    $wordCopyText = $wordCopyTextKey !== null ? trim((string) ($copyWordsByAyahPosition[$wordCopyTextKey] ?? '')) : '';
+
+                    if ($wordCopyText === '') {
+                        $wordCopyText = trim((string) ($word['copy_text'] ?? $wordText));
+                    }
+
                     $verseMeta = $verseMetaByPair[$pairKey] ?? null;
                     $nextWord = $displayWordsByIndex[$wordIndex + 1] ?? null;
                     $wordEndsAyah = ! is_array($nextWord)
@@ -814,6 +869,8 @@ class QuranReader extends Component
                         'surah_number' => $wordSurahNumber,
                         'ayah_number' => $wordAyahNumber,
                         'text' => $wordText,
+                        'copy_text' => $wordCopyText,
+                        'ayah_copy_text' => trim((string) ($verseMeta['copy_text'] ?? '')),
                         'is_glyph' => (bool) $word['is_glyph'],
                         'ends_ayah' => $wordEndsAyah,
                     ];
@@ -825,10 +882,13 @@ class QuranReader extends Component
                             'surah_number' => (int) $currentSegmentMeta['surah_number'],
                             'ayah_number' => (int) $currentSegmentMeta['ayah_number'],
                             'text' => trim(implode($currentSegmentJoiner, $currentSegmentTokens)),
+                            'copy_text' => trim(implode(' ', $currentSegmentCopyTokens)),
+                            'ayah_copy_text' => trim((string) $currentSegmentMeta['copy_text']),
                             'ends_ayah' => $currentSegmentEndsAyah,
                         ];
 
                         $currentSegmentTokens = [];
+                        $currentSegmentCopyTokens = [];
                         $currentSegmentMeta = null;
                         $currentSegmentEndsAyah = false;
                     }
@@ -839,12 +899,14 @@ class QuranReader extends Component
                             'ayah_index' => (int) ($verseMeta['ayah_index'] ?? 0),
                             'surah_number' => $wordSurahNumber,
                             'ayah_number' => $wordAyahNumber,
+                            'copy_text' => trim((string) ($verseMeta['copy_text'] ?? '')),
                         ];
                         $currentSegmentJoiner = ((bool) $word['is_glyph']) ? '' : ' ';
                     }
 
                     $currentPairKey = $pairKey;
                     $currentSegmentTokens[] = $wordText;
+                    $currentSegmentCopyTokens[] = $wordCopyText;
                     $currentSegmentEndsAyah = $wordEndsAyah;
                 }
 
@@ -855,6 +917,8 @@ class QuranReader extends Component
                         'surah_number' => (int) $currentSegmentMeta['surah_number'],
                         'ayah_number' => (int) $currentSegmentMeta['ayah_number'],
                         'text' => trim(implode($currentSegmentJoiner, $currentSegmentTokens)),
+                        'copy_text' => trim(implode(' ', $currentSegmentCopyTokens)),
+                        'ayah_copy_text' => trim((string) $currentSegmentMeta['copy_text']),
                         'ends_ayah' => $currentSegmentEndsAyah,
                     ];
                 }
@@ -1885,13 +1949,7 @@ class QuranReader extends Component
             base_path('vendor/goodm4ven/arabicable/resources/raw-data/quran/layouts/qpc-v2.db'),
         ];
 
-        foreach ($candidates as $candidate) {
-            if (is_file($candidate)) {
-                return $candidate;
-            }
-        }
-
-        return null;
+        return QpcWordsDatabase::resolveFirstValidPath($candidates);
     }
 
     private function resolveDisplayedMushafPage(int $surahNumber, int $ayahNumber, ?int $mushafPage): ?int
