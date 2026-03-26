@@ -8,6 +8,44 @@ final class QuranWordCopyText
 {
     /**
      * @param  iterable<array{
+     *     global_word_index?: int|string|null,
+     *     token_uthmani?: string|null,
+     *     token_searchable_typed?: string|null
+     * }|object{
+     *     global_word_index?: int|string|null,
+     *     token_uthmani?: string|null,
+     *     token_searchable_typed?: string|null
+     * }>  $wordRows
+     * @return array<int, string>
+     */
+    public static function buildMapByGlobalWordIndex(iterable $wordRows): array
+    {
+        $map = [];
+
+        foreach ($wordRows as $wordRow) {
+            $globalWordIndex = (int) data_get($wordRow, 'global_word_index', 0);
+
+            if ($globalWordIndex < 1) {
+                continue;
+            }
+
+            $copyText = self::normalizeToken(
+                data_get($wordRow, 'token_uthmani'),
+                data_get($wordRow, 'token_searchable_typed'),
+            );
+
+            if ($copyText === null) {
+                continue;
+            }
+
+            $map[$globalWordIndex] = $copyText;
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param  iterable<array{
      *     surah_number?: int|string|null,
      *     ayah_number?: int|string|null,
      *     word_position?: int|string|null,
@@ -63,14 +101,19 @@ final class QuranWordCopyText
     public static function normalizeToken(?string $tokenUthmani, ?string $tokenSearchableTyped): ?string
     {
         $uthmaniText = trim((string) ($tokenUthmani ?? ''));
+        $typedText = trim((string) ($tokenSearchableTyped ?? ''));
         $copyText = $uthmaniText;
 
-        if ($copyText === '') {
-            $copyText = trim((string) ($tokenSearchableTyped ?? ''));
+        if ($copyText !== '') {
+            $copyText = self::normalizeUthmaniCopyText($copyText);
         }
 
-        if ($copyText !== '' && $uthmaniText !== '') {
-            $copyText = self::normalizeUthmaniCopyText($copyText);
+        if ($copyText !== '' && ! self::containsPresentationForms($copyText)) {
+            return $copyText;
+        }
+
+        if ($typedText !== '') {
+            return self::normalizeTypedCopyText($typedText);
         }
 
         return $copyText !== '' ? $copyText : null;
@@ -89,5 +132,17 @@ final class QuranWordCopyText
         $normalized = preg_replace('/\s+/u', ' ', $normalized) ?? $normalized;
 
         return trim($normalized);
+    }
+
+    private static function normalizeTypedCopyText(string $text): string
+    {
+        $normalized = preg_replace('/\s+/u', ' ', $text) ?? $text;
+
+        return trim($normalized);
+    }
+
+    private static function containsPresentationForms(string $text): bool
+    {
+        return (bool) preg_match('/[\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}]/u', $text);
     }
 }
