@@ -62,12 +62,32 @@ final class QuranWordCopyText
 
     public static function normalizeToken(?string $tokenUthmani, ?string $tokenSearchableTyped): ?string
     {
-        $copyText = trim((string) ($tokenUthmani ?? ''));
+        $uthmaniText = trim((string) ($tokenUthmani ?? ''));
+        $copyText = $uthmaniText;
 
         if ($copyText === '') {
             $copyText = trim((string) ($tokenSearchableTyped ?? ''));
         }
 
+        if ($copyText !== '' && $uthmaniText !== '') {
+            $copyText = self::normalizeUthmaniCopyText($copyText);
+        }
+
         return $copyText !== '' ? $copyText : null;
+    }
+
+    private static function normalizeUthmaniCopyText(string $text): string
+    {
+        $normalized = preg_replace(
+            '/[\x{200B}-\x{200F}\x{061C}\x{2066}-\x{2069}\x{FEFF}]/u',
+            '',
+            $text,
+        ) ?? $text;
+        $normalized = preg_replace('/\x{06E1}/u', "\u{0652}", $normalized) ?? $normalized;
+        $normalized = preg_replace('/[\x{06D6}-\x{06ED}]/u', '', $normalized) ?? $normalized;
+        $normalized = preg_replace('/\x{0640}/u', '', $normalized) ?? $normalized;
+        $normalized = preg_replace('/\s+/u', ' ', $normalized) ?? $normalized;
+
+        return trim($normalized);
     }
 }
