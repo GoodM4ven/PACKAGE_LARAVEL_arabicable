@@ -45,6 +45,11 @@ it('normalizes quran word copy tokens with uthmani priority and typed fallback',
         ->and(QuranWordCopyText::normalizeToken('   ', '   '))->toBeNull();
 });
 
+it('normalizes uthmani-only quran annotation marks to clipboard-safe forms', function (): void {
+    expect(QuranWordCopyText::normalizeToken('ٱلرَّحۡمَـٰنِ', 'الرحمن'))->toBe('ٱلرَّحْمَٰنِ')
+        ->and(QuranWordCopyText::normalizeToken('إِلَيْهِۦ', 'اليه'))->toBe('إِلَيْهِ');
+});
+
 it('builds ayah word key only for valid positive indexes', function (): void {
     expect(QuranWordCopyText::ayahWordKey(2, 255, 3))->toBe('2:255:3')
         ->and(QuranWordCopyText::ayahWordKey(0, 1, 1))->toBeNull()
