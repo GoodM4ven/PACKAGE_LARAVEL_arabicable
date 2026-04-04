@@ -85,6 +85,13 @@ final class QuranSearchText
         $legacySpellingVariantsWithoutVocative = self::expandLegacySpellingVariantsForPhrase(
             $withoutVocative,
         );
+        $hamzatedMaddWordVariants = self::expandHamzatedMaddWordVariantsForPhrase($trimmed);
+        $hamzatedMaddWordVariantsWithoutConjunctions = self::expandHamzatedMaddWordVariantsForPhrase(
+            $withoutConjunctions,
+        );
+        $hamzatedMaddWordVariantsWithoutVocative = self::expandHamzatedMaddWordVariantsForPhrase(
+            $withoutVocative,
+        );
         $variants = [
             $trimmed,
             strtr($trimmed, ['ي' => 'ی', 'ى' => 'ی', 'ك' => 'ک']),
@@ -107,6 +114,9 @@ final class QuranSearchText
             ...$legacySpellingVariants,
             ...$legacySpellingVariantsWithoutConjunctions,
             ...$legacySpellingVariantsWithoutVocative,
+            ...$hamzatedMaddWordVariants,
+            ...$hamzatedMaddWordVariantsWithoutConjunctions,
+            ...$hamzatedMaddWordVariantsWithoutVocative,
         ];
 
         $normalized = [];
@@ -160,6 +170,10 @@ final class QuranSearchText
             $variants[] = strtr($baseVariant, ['ی' => 'ي', 'ى' => 'ي', 'ک' => 'ك']);
             $variants[] = strtr($baseVariant, ['الرحمن' => 'الرحمان', 'رحمن' => 'رحمان']);
             $variants[] = strtr($baseVariant, ['الرحمان' => 'الرحمن', 'رحمان' => 'رحمن']);
+
+            foreach (self::expandHamzatedMaddWordVariantsForPhrase($baseVariant) as $hamzatedVariant) {
+                $variants[] = $hamzatedVariant;
+            }
         }
 
         $normalized = [];
@@ -339,6 +353,35 @@ final class QuranSearchText
         $variants = [];
 
         foreach ([$normalizedIla, $normalizedWawVerb, $normalizedCombined] as $candidate) {
+            $value = trim((string) $candidate);
+
+            if ($value === '' || $value === $trimmed) {
+                continue;
+            }
+
+            $variants[] = $value;
+        }
+
+        return array_values(array_unique($variants));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function expandHamzatedMaddWordVariantsForPhrase(string $text): array
+    {
+        $trimmed = trim($text);
+
+        if ($trimmed === '') {
+            return [];
+        }
+
+        $withHamzatedMadd = preg_replace('/(^|\s)الاء(?=\s|$)/u', '$1ءالاء', $trimmed) ?? $trimmed;
+        $withoutHamzatedMadd = preg_replace('/(^|\s)ءالاء(?=\s|$)/u', '$1الاء', $trimmed) ?? $trimmed;
+
+        $variants = [];
+
+        foreach ([$withHamzatedMadd, $withoutHamzatedMadd] as $candidate) {
             $value = trim((string) $candidate);
 
             if ($value === '' || $value === $trimmed) {
