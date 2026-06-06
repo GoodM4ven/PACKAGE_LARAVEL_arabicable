@@ -151,8 +151,8 @@ class QuranReader extends Component
         $basmalahFont = $this->resolveBasmalahFont();
 
         $searchQuery = trim($this->normalizeQuranSearchQuery($this->query));
-        $searchMatches = $searchQuery !== ''
-            ? $this->buildSearchMatches($searchQuery, $this->searchLimit, $hasTypedWordColumn)
+        $searchMatches = trim($this->query) !== ''
+            ? $this->buildSearchMatches($this->query, $this->searchLimit, $hasTypedWordColumn)
             : [];
 
         $mushafLines = $this->buildPageLines($pageNumber);
@@ -317,11 +317,7 @@ class QuranReader extends Component
             return null;
         }
 
-        $matches = $this->buildSearchMatches(
-            $normalizedQuery,
-            2,
-            Schema::hasTable('quran_words') && Schema::hasColumn('quran_words', 'token_searchable_typed'),
-        );
+        $matches = $this->buildExactSearchMatchesForQuery($query, 2);
 
         if (count($matches) !== 1) {
             return null;
@@ -335,6 +331,109 @@ class QuranReader extends Component
      */
     private function buildSearchMatches(string $searchQuery, int $limit, bool $hasTypedWordColumn): array
     {
+        $queries = $this->splitSearchQueries($searchQuery);
+
+        if ($queries === []) {
+            return [];
+        }
+
+        if (count($queries) === 1) {
+            return $this->buildSearchMatchesForQuery($queries[0], $limit, $hasTypedWordColumn);
+        }
+
+        $matches = [];
+        $seenAyahIndexes = [];
+
+        foreach ($queries as $query) {
+            if (count($matches) >= $limit) {
+                break;
+            }
+
+            $queryMatches = $this->buildExactFirstSearchMatchesForQuery($query, $limit, $hasTypedWordColumn);
+
+            foreach ($queryMatches as $match) {
+                $ayahIndex = (int) $match['ayah_index'];
+
+                if ($ayahIndex < 1 || isset($seenAyahIndexes[$ayahIndex])) {
+                    continue;
+                }
+
+                $seenAyahIndexes[$ayahIndex] = true;
+                $matches[] = $match;
+
+                if (count($matches) >= $limit) {
+                    break 2;
+                }
+            }
+        }
+
+        return $matches;
+    }
+
+    /**
+     * @return array<int, array{id: int, ayah_index: int, surah_number: int, surah_title: string, ayah_number: int, mushaf_page: int|null, text_uthmani: string, search_snippet: string}>
+     */
+    private function buildExactFirstSearchMatchesForQuery(string $searchQuery, int $limit, bool $hasTypedWordColumn): array
+    {
+        $exactMatches = $this->buildExactSearchMatchesForQuery($searchQuery, $limit);
+
+        if ($exactMatches !== []) {
+            return $exactMatches;
+        }
+
+        return $this->buildSearchMatchesForQuery($searchQuery, $limit, $hasTypedWordColumn);
+    }
+
+    /**
+     * @return array<int, array{id: int, ayah_index: int, surah_number: int, surah_title: string, ayah_number: int, mushaf_page: int|null, text_uthmani: string, search_snippet: string}>
+     */
+    private function buildExactSearchMatchesForQuery(string $searchQuery, int $limit): array
+    {
+        $searchQuery = trim($this->normalizeQuranSearchQuery($searchQuery));
+
+        if ($searchQuery === '') {
+            return [];
+        }
+
+        $verseIds = $this->collectVerseIdsByExactPhrase($searchQuery, $limit);
+
+        if ($verseIds === []) {
+            return [];
+        }
+
+        $matches = [];
+        $seenAyahIndexes = [];
+
+        $this->appendVerseMatches($matches, $seenAyahIndexes, $verseIds, $limit, $searchQuery);
+
+        return $matches;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function splitSearchQueries(string $searchQuery): array
+    {
+        $segments = preg_split('/\s*(?:۝|\R)\s*/u', trim($searchQuery)) ?: [];
+        $segments = array_values(array_filter(array_map(
+            static fn (string $segment): string => trim($segment),
+            $segments,
+        ), static fn (string $segment): bool => $segment !== ''));
+
+        return $segments;
+    }
+
+    /**
+     * @return array<int, array{id: int, ayah_index: int, surah_number: int, surah_title: string, ayah_number: int, mushaf_page: int|null, text_uthmani: string, search_snippet: string}>
+     */
+    private function buildSearchMatchesForQuery(string $searchQuery, int $limit, bool $hasTypedWordColumn): array
+    {
+        $searchQuery = trim($this->normalizeQuranSearchQuery($searchQuery));
+
+        if ($searchQuery === '') {
+            return [];
+        }
+
         $tokens = QuranSearchText::prepareTokens(array_values(array_unique(array_filter(
             preg_split('/\s+/u', trim($searchQuery)) ?: [],
             static fn (string $token): bool => $token !== '',
@@ -350,7 +449,7 @@ class QuranReader extends Component
 
         $this->appendVerseMatches($matches, $seenAyahIndexes, $exactPhraseVerseIds, $limit, $searchQuery);
 
-        if (count($matches) >= $limit) {
+        if ($matches !== []) {
             return $matches;
         }
 

@@ -36,18 +36,7 @@ final class QuranSearchText
 
         $normalized = ArabicFilter::forSearch($prepared);
 
-        return strtr($normalized, [
-            'الرحمان' => 'الرحمن',
-            'رحمان' => 'رحمن',
-            'الصلوة' => 'الصلاة',
-            'صلوة' => 'صلاة',
-            'الزكوة' => 'الزكاة',
-            'زكوة' => 'زكاة',
-            'الحيوة' => 'الحياة',
-            'حيوة' => 'حياة',
-            'الربوا' => 'الربا',
-            'ربوا' => 'ربا',
-        ]);
+        return self::normalizeQuranOrthography($normalized);
     }
 
     /**
@@ -267,6 +256,73 @@ final class QuranSearchText
             '/^واسال/u' => 'وسل',
             '/^وسال/u' => 'وسل',
             '/^اسال/u' => 'سل',
+        ];
+
+        foreach ($patterns as $pattern => $replacement) {
+            if (preg_match($pattern, $trimmed) !== 1) {
+                continue;
+            }
+
+            return preg_replace($pattern, $replacement, $trimmed) ?? $trimmed;
+        }
+
+        return $trimmed;
+    }
+
+    private static function normalizeQuranOrthography(string $text): string
+    {
+        $tokens = preg_split('/\s+/u', trim($text)) ?: [];
+
+        if ($tokens === []) {
+            return '';
+        }
+
+        foreach ($tokens as $index => $token) {
+            $tokens[$index] = self::normalizeQuranOrthographyToken($token);
+        }
+
+        return trim(implode(' ', array_filter($tokens, static fn (string $token): bool => $token !== '')));
+    }
+
+    private static function normalizeQuranOrthographyToken(string $token): string
+    {
+        $trimmed = trim($token);
+
+        if ($trimmed === '') {
+            return '';
+        }
+
+        $patterns = [
+            '/^اامن/u' => 'ءامن',
+            '/^اانذ/u' => 'ءانذ',
+            '/^امن/u' => 'ءامن',
+            '/^اتنا/u' => 'ءاتنا',
+            '/^اتاك/u' => 'اتياك',
+            '/^الاخرة/u' => 'الءاخرة',
+            '/^الليل/u' => 'اليل',
+            '/^ذلك/u' => 'ذالك',
+            '/^موسيا$/u' => 'موسيا',
+            '/^موسي/u' => 'موسيا',
+            '/^عيسيا$/u' => 'عيسي',
+            '/^عيسي/u' => 'عيسي',
+            '/^اسريا$/u' => 'اسريا',
+            '/^اسري/u' => 'اسريا',
+            '/^([وفبكل]?)(?:شيء)$/u' => '$1شايء',
+            '/^انبيوني/u' => 'انبوني',
+            '/^انبئوني/u' => 'انبوني',
+            '/^هؤلاء/u' => 'هاولاء',
+            '/^لالا/u' => 'ليلا',
+            '/^ياسين/u' => 'يس',
+            '/^الرحمان/u' => 'الرحمن',
+            '/^رحمان/u' => 'رحمن',
+            '/^الصلوة/u' => 'الصلاة',
+            '/^صلوة/u' => 'صلاة',
+            '/^الزكوة/u' => 'الزكاة',
+            '/^زكوة/u' => 'زكاة',
+            '/^الحيوة/u' => 'الحياة',
+            '/^حيوة/u' => 'حياة',
+            '/^الربوا/u' => 'الربا',
+            '/^ربوا/u' => 'ربا',
         ];
 
         foreach ($patterns as $pattern => $replacement) {

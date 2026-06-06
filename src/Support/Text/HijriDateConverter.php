@@ -15,7 +15,7 @@ class HijriDateConverter
     {
         $this->assertGregorianDate($year, $month, $day);
 
-        $julianDay = gregoriantojd($month, $day, $year);
+        $julianDay = $this->gregorianToJulianDay($year, $month, $day);
 
         $l = $julianDay - 1948440 + 10632;
         $n = intdiv($l - 1, 10631);
@@ -57,7 +57,7 @@ class HijriDateConverter
             - 385
         );
 
-        $gregorian = jdtogregorian($julianDay);
+        $gregorian = $this->julianDayToGregorian($julianDay);
         [$gregorianMonth, $gregorianDay, $gregorianYear] = array_map('intval', explode('/', $gregorian));
 
         return [
@@ -79,5 +79,44 @@ class HijriDateConverter
         if ($year < 1 || $month < 1 || $month > 12 || $day < 1 || $day > 30) {
             throw new InvalidArgumentException('The Hijri date is invalid.');
         }
+    }
+
+    private function gregorianToJulianDay(int $year, int $month, int $day): int
+    {
+        if (function_exists('gregoriantojd')) {
+            return gregoriantojd($month, $day, $year);
+        }
+
+        $monthAdjustment = intdiv(14 - $month, 12);
+        $adjustedYear = $year + 4800 - $monthAdjustment;
+        $adjustedMonth = $month + (12 * $monthAdjustment) - 3;
+
+        return $day
+            + intdiv((153 * $adjustedMonth) + 2, 5)
+            + (365 * $adjustedYear)
+            + intdiv($adjustedYear, 4)
+            - intdiv($adjustedYear, 100)
+            + intdiv($adjustedYear, 400)
+            - 32045;
+    }
+
+    private function julianDayToGregorian(int $julianDay): string
+    {
+        if (function_exists('jdtogregorian')) {
+            return jdtogregorian($julianDay);
+        }
+
+        $adjustedJulianDay = $julianDay + 32044;
+        $century = intdiv((4 * $adjustedJulianDay) + 3, 146097);
+        $dayOfCentury = $adjustedJulianDay - intdiv(146097 * $century, 4);
+        $yearOfCentury = intdiv((4 * $dayOfCentury) + 3, 1461);
+        $dayOfYear = $dayOfCentury - intdiv(1461 * $yearOfCentury, 4);
+        $monthIndex = intdiv((5 * $dayOfYear) + 2, 153);
+
+        $day = $dayOfYear - intdiv((153 * $monthIndex) + 2, 5) + 1;
+        $month = $monthIndex + 3 - (12 * intdiv($monthIndex, 10));
+        $year = (100 * $century) + $yearOfCentury - 4800 + intdiv($monthIndex, 10);
+
+        return $month.'/'.$day.'/'.$year;
     }
 }
