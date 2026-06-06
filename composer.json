@@ -65,8 +65,7 @@
     },
     "scripts": {
         "post-autoload-dump": [
-            "@prepareback",
-            "@php vendor/bin/testbench boost:update --ansi"
+            "@prepareback"
         ],
         "sync-workbench-env": [
             "@php workbench/sync-workbench-env.php"
