@@ -87,6 +87,7 @@ final class QuranSearchText
             strtr($trimmed, ['ی' => 'ي', 'ى' => 'ي', 'ک' => 'ك']),
             strtr($trimmed, ['الرحمن' => 'الرحمان', 'رحمن' => 'رحمان']),
             strtr($trimmed, ['الرحمان' => 'الرحمن', 'رحمان' => 'رحمن']),
+            strtr($trimmed, ['رحمة' => 'رحمت', 'رحمت' => 'رحمة']),
             $withoutConjunctions,
             $collapsedVocative,
             $vocativeBaniShortcut,
@@ -159,6 +160,7 @@ final class QuranSearchText
             $variants[] = strtr($baseVariant, ['ی' => 'ي', 'ى' => 'ي', 'ک' => 'ك']);
             $variants[] = strtr($baseVariant, ['الرحمن' => 'الرحمان', 'رحمن' => 'رحمان']);
             $variants[] = strtr($baseVariant, ['الرحمان' => 'الرحمن', 'رحمان' => 'رحمن']);
+            $variants[] = strtr($baseVariant, ['رحمة' => 'رحمت', 'رحمت' => 'رحمة']);
 
             foreach (self::expandHamzatedMaddWordVariantsForPhrase($baseVariant) as $hamzatedVariant) {
                 $variants[] = $hamzatedVariant;
